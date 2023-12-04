@@ -6,7 +6,7 @@ export default function List_PDFs() {
 
   // Extracted function to fetch PDF list
   const fetchPdfList = () => {
-    axios.get('http://localhost:5000/getpdfs')
+    axios.get('http://localhost:5000/getpdfs24hrs')
       .then(response => {
         setPdfList(response.data);
       })
@@ -41,7 +41,7 @@ export default function List_PDFs() {
         
         {/* Title */}
         <div className="text-center mt-12">
-          <p className="text-4xl font-bold mb-10">領料單總覽</p>
+          <p className="text-4xl font-bold mb-10">達州原料部領料單</p>
         </div>
 
         {/* Grid List */}
@@ -88,8 +88,8 @@ export default function List_PDFs() {
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.main_glue_pdf_name}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.promoter_pdf_name}</td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
-                        <button className="text-red-600 hover:text-red-800 font-bold" onClick={() => deleteRecord(pdf.id)}>
-                          刪除
+                        <button className="text-indigo-600 hover:text-indigo-300 font-bold" onClick={() => deleteRecord(pdf.id)}>
+                          查看
                         </button>
                       </td>
                     </tr>
