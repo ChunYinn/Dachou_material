@@ -1,4 +1,16 @@
+import { useNavigate } from 'react-router-dom';
+
 export default function Selection() {
+  const navigate = useNavigate();
+
+  const navigateUploadPDF = () => {
+    navigate('/');
+  };
+
+  const navigateList = () => {
+    navigate('/');
+  };
+
   return (
     <div className="flex justify-center items-center h-screen" style={{ height: 'calc(100vh - 120px)' }}> 
 
