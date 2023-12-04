@@ -16,7 +16,7 @@ function App() {
     <div style={appStyle}>
       {/* <Login /> */}
       <NavBar />
-
+      
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Selection />} />
