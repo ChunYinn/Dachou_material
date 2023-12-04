@@ -4,11 +4,11 @@ export default function Selection() {
   const navigate = useNavigate();
 
   const navigateUploadPDF = () => {
-    navigate('/');
+    navigate('/upload');
   };
 
   const navigateList = () => {
-    navigate('/');
+    navigate('/list');
   };
 
   return (
@@ -18,6 +18,7 @@ export default function Selection() {
         <button
           type="button"
           className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 w-64 h-32"
+          onClick={navigateUploadPDF}
         >
           領料單輸入
         </button>
@@ -25,6 +26,7 @@ export default function Selection() {
         <button
           type="button"
           className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 w-64 h-32"
+          onClick={navigateList}
         >
           領料單查詢
         </button>

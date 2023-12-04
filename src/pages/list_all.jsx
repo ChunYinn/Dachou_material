@@ -1,7 +1,7 @@
 
 export default function ListPDFs() {
   <>
-  List PDFS
+  <h1>List PDFS</h1>
   </>
 
 }
