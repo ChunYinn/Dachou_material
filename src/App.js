@@ -1,4 +1,7 @@
+import { Route, Routes } from 'react-router-dom';
 import Login from "./pages/login";
+import Selection from "./pages/selection";
+import NavBar from "./common/nav";
 
 function App() {
   const appStyle = {
@@ -9,7 +12,14 @@ function App() {
 
   return (
     <div style={appStyle}>
-      <Login />
+      {/* <Login /> */}
+      <NavBar />
+
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<Selection />} />
+      </Routes>
+
     </div>
   );
 }
