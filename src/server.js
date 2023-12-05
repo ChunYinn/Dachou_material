@@ -220,6 +220,37 @@ app.delete('/deletepdf/:id', async (req, res) => {
   }
 });
 
+//update audit status (by toggle btn)
+app.put('/updatepdf/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { auditStatus } = req.body;
+
+    // Create a new MySQL connection
+    const connection = await mysql.createConnection(dbConfig);
+
+    // SQL query to update auditStatus
+    const sql = 'UPDATE pdfs SET auditStatus = ? WHERE id = ?';
+    const values = [auditStatus, id];
+
+    // Execute the query
+    const [result] = await connection.execute(sql, values);
+
+    // Close the connection
+    await connection.end();
+
+    if (result.affectedRows === 0) {
+      res.status(404).send('Record not found');
+    } else {
+      res.send('Record updated successfully');
+    }
+  } catch (error) {
+    console.error('Error updating record:', error.message);
+    res.status(500).send('Error updating record: ' + error.message);
+  }
+});
+
+
 
 const server = app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

@@ -71,9 +71,9 @@ export default function List_PDFs() {
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.selected_date}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm">
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium 
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 font-medium 
                                         ${pdf.auditStatus === 'Not Finish' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                          {pdf.auditStatus}
+                          {pdf.auditStatus === 'Not Finish' ? '未審核' : '已審核'}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.main_glue_pdf_name}</td>

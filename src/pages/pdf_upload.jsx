@@ -79,10 +79,13 @@ export default function UploadPDF() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [mainGluePdf, setMainGluePdf] = useState({ file: null, name: "" });
   const [promoterPdf, setPromoterPdf] = useState({ file: null, name: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
 
   const handleSubmit = () => {
+    setIsSubmitting(true);
+
     const formData = new FormData();
     formData.append('date', selectedDate);
     if (mainGluePdf) {
@@ -105,6 +108,9 @@ export default function UploadPDF() {
     })
     .catch(error => {
       console.error('Error uploading files', error);
+    })
+    .finally(() => {
+      setIsSubmitting(false); // Re-enable the button after submission
     });
   };
 
