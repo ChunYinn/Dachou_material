@@ -156,6 +156,40 @@ app.get('/getpdfs24hrs', async (req, res) => {
   }
 });
 
+//get pdfs by ID
+app.get('/getpdf/:pdfId', async (req, res) => {
+  const pdfId = req.params.pdfId;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const [rows] = await connection.execute(
+      'SELECT id, DATE_FORMAT(selected_date, "%Y-%m-%d") AS selected_date, main_glue_pdf, promoter_pdf, main_glue_pdf_name, promoter_pdf_name, auditStatus FROM pdfs WHERE id = ?',
+      [pdfId]
+    );
+
+    if (rows.length > 0) {
+      const pdfData = rows[0];
+      res.json({
+        id: pdfData.id,
+        selectedDate: pdfData.selected_date, // This will now be formatted as 'YYYY-MM-DD'
+        mainGluePdf: pdfData.main_glue_pdf.toString('base64'),
+        promoterPdf: pdfData.promoter_pdf.toString('base64'),
+        mainGluePdfName: pdfData.main_glue_pdf_name,
+        promoterPdfName: pdfData.promoter_pdf_name,
+        auditStatus: pdfData.auditStatus
+      });
+    } else {
+      res.status(404).send('PDF not found');
+    }
+
+    await connection.end();
+  } catch (error) {
+    console.error('Error fetching PDF:', error.message);
+    res.status(500).send('Error fetching PDF');
+  }
+});
+
+
 
 app.delete('/deletepdf/:id', async (req, res) => {
   try {

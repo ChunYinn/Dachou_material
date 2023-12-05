@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import tachouLogo from '../assets/tachou_logo.jpg';
 
 export default function Login({ setIsLoggedIn }) {
   const [email, setEmail] = useState('');
@@ -34,8 +35,8 @@ export default function Login({ setIsLoggedIn }) {
         <div className="w-full max-w-sm space-y-10">
           <div>
             <img
-              className="mx-auto h-10 w-auto"
-              src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
+              className="mx-auto h-24 w-auto"
+              src={tachouLogo}
               alt="Dachou Logo"
             />
             <h2 className="mt-10 text-center text-3xl font-bold leading-9 tracking-tight text-gray-900">

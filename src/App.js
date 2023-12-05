@@ -6,6 +6,7 @@ import NavBar from "./common/nav";
 import ListPDFs from './pages/list_all';
 import UploadPDF from './pages/pdf_upload';
 import EmployeeList from './pages/list_employ';
+import PDFDetail from './pages/pdf_detail';
 
 function App() {
   const location = useLocation();
@@ -42,6 +43,7 @@ function App() {
         )}
 
         <Route path="/employee" element={<EmployeeList />} />
+        <Route path="/pdf/:pdfId" element={<PDFDetail />} />
 
         {/* Redirect non-manager users trying to access manager-only routes */}
         {!isManager && isLoggedIn && (

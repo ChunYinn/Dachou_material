@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 export default function List_PDFs() {
+  const navigate = useNavigate();
   const [pdfList, setPdfList] = useState([]);
 
   // Extracted function to fetch PDF list
@@ -20,19 +22,8 @@ export default function List_PDFs() {
   }, []);
 
   // Function to delete a record and then refresh the list
-  const deleteRecord = (id) => {
-    if (window.confirm('您確定要刪除此項目?')) {
-      axios.delete(`http://localhost:5000/deletepdf/${id}`)
-        .then(response => {
-          alert('成功刪除!');
-          console.log('Record deleted:', response.data);
-          setPdfList(pdfList.filter((pdf) => pdf.id !== id)); // Update state without re-fetching
-        })
-        .catch(error => {
-          console.error('There was an error deleting the record:', error);
-          alert('There was an error deleting the record.');
-        });
-    }
+  const viewDetails = (pdfId) => {
+    navigate(`/pdf/${pdfId}`);
   };
 
   return (
@@ -41,7 +32,7 @@ export default function List_PDFs() {
         
         {/* Title */}
         <div className="text-center mt-12">
-          <p className="text-4xl font-bold mb-10">達州原料部領料單</p>
+          <p className="text-4xl font-bold mb-10">達州原料部領料單(今日)</p>
         </div>
 
         {/* Grid List */}
@@ -88,7 +79,7 @@ export default function List_PDFs() {
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.main_glue_pdf_name}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.promoter_pdf_name}</td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
-                        <button className="text-indigo-600 hover:text-indigo-300 font-bold" onClick={() => deleteRecord(pdf.id)}>
+                        <button className="text-indigo-600 hover:text-indigo-300 font-bold" onClick={() => viewDetails(pdf.id)}>
                           查看
                         </button>
                       </td>
