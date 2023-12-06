@@ -37,12 +37,16 @@ export default function List_PDFs() {
     </div>
   );
 
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
   return (
     <div className="flex justify-center items-center">
       <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
         {/* Title */}
         <div className="text-center mt-12">
-          <p className="text-4xl font-bold mb-10">達州原料部領料單(今日)</p>
+          <p className="text-4xl font-bold mb-10">達洲原料部領料單</p>
         </div>
   
         {/* Grid List */}
@@ -58,7 +62,7 @@ export default function List_PDFs() {
                       ID
                     </th>
                     <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-3 py-3 text-left text-sm font-semibold text-gray-900">
-                      打料日期?
+                      打料日期
                     </th>
                     <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-3 py-3 text-left text-sm font-semibold text-gray-900">
                       審核
@@ -83,7 +87,9 @@ export default function List_PDFs() {
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">
                           {pdf.id}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.selected_date}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {pdf.selected_date === todayStr ? todayStr+' (今日)' : pdf.selected_date}
+                        </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                           <span className={`inline-flex items-center rounded-full px-2 py-1 font-medium 
                                           ${pdf.auditStatus === 'Not Finish' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>

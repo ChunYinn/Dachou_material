@@ -133,16 +133,22 @@ app.get('/getpdfs', async (req, res) => {
 });
 
 
-// Endpoint to fetch data from the pdfs table for the last 24 hours
+// Endpoint to fetch data from the pdfs table for today and tomorrow
 app.get('/getpdfs24hrs', async (req, res) => {
   try {
     // Create a new MySQL connection
     const connection = await mysql.createConnection(dbConfig);
 
     // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
-    // SQL query to select data from the pdfs table for the last 24 hours
+    // Calculate tomorrow's date by adding one day to today
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    // SQL query to select data from the pdfs table for today and tomorrow
     const sql = `
       SELECT 
         id, 
@@ -153,15 +159,12 @@ app.get('/getpdfs24hrs', async (req, res) => {
         main_glue_status,
         promoter_status
       FROM pdfs 
-      WHERE selected_date = ?
-      ORDER BY upload_timestamp DESC
+      WHERE selected_date BETWEEN ? AND ?
+      ORDER BY selected_date
     `;
 
-    // Execute the query with today's date
-    const [rows] = await connection.execute(sql, [today]);
-
-    // Close the connection
-    await connection.end();
+    // Execute the query with today's and tomorrow's date
+    const [rows] = await connection.execute(sql, [todayStr, tomorrowStr]);
 
     // Send the data back to the client
     res.json(rows);

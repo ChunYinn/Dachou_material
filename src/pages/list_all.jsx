@@ -75,7 +75,7 @@ export default function List_PDFs() {
                       ID
                     </th>
                     <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-3 py-3 text-left text-sm font-semibold text-gray-900">
-                      打料日期?
+                      打料日期
                     </th>
                     <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-3 py-3 text-left text-sm font-semibold text-gray-900">
                       審核

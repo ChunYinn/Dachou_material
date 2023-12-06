@@ -85,7 +85,7 @@ const PDFDetail = () => {
 
   return (
     <div className="flex flex-col justify-center items-center mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <p className="text-4xl text-indigo-600 font-bold mb-10 mt-12">
+      <p className="text-2xl text-indigo-600 font-bold mb-10 mt-12">
         打料日期 {pdfDetails?.selectedDate} 編號:{pdfDetails?.id}
       </p>
   
@@ -180,7 +180,7 @@ const PDFDetail = () => {
         <iframe
           className='mt-12 mb-12'
           src={selectedPdf}
-          style={{ width: '140%', height: '600px' }}
+          style={{ width: '300%', height: '1000px' }}//set dynamic
           frameBorder="0"
         />
       )}
