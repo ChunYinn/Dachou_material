@@ -7,6 +7,8 @@ const PDFDetail = () => {
   const [pdfDetails, setPdfDetails] = useState(null);
   const [selectedPdf, setSelectedPdf] = useState(null);
   const [activeButton, setActiveButton] = useState(null);
+  const [mainGlueChecked, setMainGlueChecked] = useState(false);
+  const [promoterChecked, setPromoterChecked] = useState(false);
 
   // Get the user's role from localStorage
   const userRole = localStorage.getItem('userRole');
@@ -16,6 +18,8 @@ const PDFDetail = () => {
       axios.get(`http://localhost:5000/getpdf/${pdfId}`)
         .then(response => {
           setPdfDetails(response.data);
+          setMainGlueChecked(response.data.mainGlueStatus === 'Finish');
+          setPromoterChecked(response.data.promoterStatus === 'Finish');
         })
         .catch(error => {
           console.error('Error fetching details:', error);
@@ -36,6 +40,32 @@ const PDFDetail = () => {
     const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
     const pdfUrl = URL.createObjectURL(pdfBlob);
     setSelectedPdf(pdfUrl);
+  };
+
+  const handleCheckboxChange = (pdfType) => {
+    // The new status based on the checkbox
+    const newStatus = pdfType === 'main' ? !mainGlueChecked : !promoterChecked;
+    
+    const isConfirmed = window.confirm("您確定更改完成狀態?");
+    if (isConfirmed) {
+      axios.put('http://localhost:5000/updateStatus', { 
+        id: pdfId, 
+        type: pdfType, 
+        status: newStatus ? 'Finish' : 'Not Finish'
+      })
+      .then(response => {
+        alert('更改完成!');
+        // Update the state to reflect the new status
+        if (pdfType === 'main') {
+          setMainGlueChecked(newStatus);
+        } else {
+          setPromoterChecked(newStatus);
+        }
+      })
+      .catch(error => {
+        console.error('Error updating status:', error);
+      });
+    }
   };
   
 
@@ -61,48 +91,88 @@ const PDFDetail = () => {
   
       {/* Buttons for Manager: Show both */}
       {userRole === 'manager' && (
-        <span className="isolate inline-flex rounded-md shadow-sm">
+        <div className="flex items-center mb-4 bg-white border rounded-md shadow-sm">
+          <label className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 border-r border-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={mainGlueChecked}
+              onChange={() => handleCheckboxChange('main', !mainGlueChecked)}
+              className="form-checkbox text-indigo-600 h-4 w-4 mr-2 cursor-pointer rounded"
+              style={{ marginTop: '-2px' }}
+            />
+            主膠PDF
+          </label>
           <button
             type="button"
-            className={`relative inline-flex justify-center items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 ${activeButton === 'main' ? 'bg-gray-200' : 'hover:bg-gray-50'}`}
-            style={{ width: '100px' }}
+            className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 bg-white border-r border-gray-300 cursor-pointer ${activeButton === 'main' ? 'bg-gray-200' : 'hover:bg-gray-50'}`}
             onClick={() => handlePdfClick('main')}
           >
-            主膠PDF
+            查看
           </button>
           <button
             type="button"
-            className={`relative inline-flex justify-center items-center -ml-px rounded-r-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 ${activeButton === 'promoter' ? 'bg-gray-200' : 'hover:bg-gray-50'}`}
-            style={{ width: '100px' }}
+            className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 bg-white border-r border-gray-300 cursor-pointer ${activeButton === 'promoter' ? 'bg-gray-200' : 'hover:bg-gray-50'}`}
             onClick={() => handlePdfClick('promoter')}
           >
-            促進劑PDF
+            查看
           </button>
-        </span>
+          <label className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 border-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={promoterChecked}
+              onChange={() => handleCheckboxChange('promoter', !promoterChecked)}
+              className="form-checkbox text-indigo-600 h-4 w-4 mr-2 cursor-pointer rounded"
+              style={{ marginTop: '-2px' }}
+            />
+            促進劑PDF
+          </label>
+        </div>
       )}
   
       {/* Button for Main Glue Role: Show only Main Glue PDF */}
       {userRole === 'main glue' && (
-        <button
-          type="button"
-          className={`relative inline-flex justify-center items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50`}
-          style={{ width: '150px' }}
-          onClick={() => handlePdfClick('main')}
-        >
-          開啟主膠PDF
-        </button>
+        <div className="flex items-center mb-4 bg-white border rounded-md shadow-sm">
+          <label className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 border-r border-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={mainGlueChecked}
+              onChange={() => handleCheckboxChange('main', !mainGlueChecked)}
+              className="form-checkbox text-indigo-600 h-4 w-4 mr-2 cursor-pointer rounded"
+              style={{ marginTop: '-2px' }}
+            />
+            主膠PDF
+          </label>
+          <button
+            type="button"
+            className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 bg-white border-r border-gray-300 cursor-pointer ${activeButton === 'main' ? 'bg-gray-200' : 'hover:bg-gray-50'}`}
+            onClick={() => handlePdfClick('main')}
+          >
+            查看
+          </button>
+        </div>
       )}
   
       {/* Button for Promoter Role: Show only Promoter PDF */}
       {userRole === 'promoter' && (
-        <button
-          type="button"
-          className={`relative inline-flex justify-center items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50`}
-          style={{ width: '150px' }}
-          onClick={() => handlePdfClick('promoter')}
-        >
-          開啟促進劑PDF
-        </button>
+        <div className="flex items-center mb-4 bg-white border rounded-md shadow-sm">
+          <label className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 border-r border-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={promoterChecked}
+              onChange={() => handleCheckboxChange('promoter', !promoterChecked)}
+              className="form-checkbox text-indigo-600 h-4 w-4 mr-2 cursor-pointer rounded"
+              style={{ marginTop: '-2px' }}
+            />
+            促進劑PDF
+          </label>
+          <button
+            type="button"
+            className={`inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-gray-900 bg-white border-r border-gray-300 cursor-pointer ${activeButton === 'promoter' ? 'bg-gray-200' : 'hover:bg-gray-50'}`}
+            onClick={() => handlePdfClick('promoter')}
+          >
+            查看
+          </button>
+        </div>
       )}
   
       {/* PDF Viewer */}

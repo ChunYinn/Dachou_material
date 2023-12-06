@@ -43,6 +43,17 @@ export default function List_PDFs() {
     navigate(`/pdf/${pdfId}`);
   };
 
+  // Function to render PDF name with status indicator
+  const renderPdfNameWithStatus = (pdfName, status) => (
+    <div className="flex items-center">
+      <span
+        className={`h-2 w-2 rounded-full mr-2 ${status === 'Not Finish' ? 'bg-red-500' : 'bg-green-500'}`}
+        aria-hidden="true"
+      ></span>
+      {pdfName}
+    </div>
+  );
+
   return (
     <div className="flex justify-center items-center">
       <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -91,14 +102,14 @@ export default function List_PDFs() {
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.selected_date}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm">
-                        {/* <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium 
-                                        ${pdf.auditStatus === 'Not Finish' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                          {pdf.auditStatus}
-                        </span> */}
                         <ToggleBTN initialStatus={pdf.auditStatus} pdfId={pdf.id}/>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.main_glue_pdf_name}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{pdf.promoter_pdf_name}</td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {renderPdfNameWithStatus(pdf.main_glue_pdf_name, pdf.main_glue_status)}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {renderPdfNameWithStatus(pdf.promoter_pdf_name, pdf.promoter_status)}
+                      </td>
                       <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
                         <button className="text-indigo-600 hover:text-indigo-300 font-bold" onClick={() => viewDetails(pdf.id)}>
                           查看

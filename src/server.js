@@ -106,7 +106,14 @@ app.get('/getpdfs', async (req, res) => {
 
     // SQL query to select data from the pdfs table
     const sql = `
-      SELECT id, DATE_FORMAT(selected_date, '%Y-%m-%d') as selected_date, auditStatus, main_glue_pdf_name, promoter_pdf_name 
+      SELECT 
+        id, 
+        DATE_FORMAT(selected_date, '%Y-%m-%d') as selected_date, 
+        auditStatus, 
+        main_glue_pdf_name, 
+        promoter_pdf_name,
+        main_glue_status,
+        promoter_status
       FROM pdfs 
       ORDER BY selected_date DESC
     `;
@@ -125,6 +132,7 @@ app.get('/getpdfs', async (req, res) => {
   }
 });
 
+
 // Endpoint to fetch data from the pdfs table for the last 24 hours
 app.get('/getpdfs24hrs', async (req, res) => {
   try {
@@ -136,10 +144,17 @@ app.get('/getpdfs24hrs', async (req, res) => {
 
     // SQL query to select data from the pdfs table for the last 24 hours
     const sql = `
-      SELECT id, DATE_FORMAT(selected_date, '%Y-%m-%d') as selected_date, auditStatus, main_glue_pdf_name, promoter_pdf_name 
+      SELECT 
+        id, 
+        DATE_FORMAT(selected_date, '%Y-%m-%d') as selected_date, 
+        auditStatus, 
+        main_glue_pdf_name, 
+        promoter_pdf_name,
+        main_glue_status,
+        promoter_status
       FROM pdfs 
       WHERE selected_date = ?
-      ORDER BY selected_date DESC
+      ORDER BY upload_timestamp DESC
     `;
 
     // Execute the query with today's date
@@ -156,6 +171,7 @@ app.get('/getpdfs24hrs', async (req, res) => {
   }
 });
 
+
 //get pdfs by ID
 app.get('/getpdf/:pdfId', async (req, res) => {
   const pdfId = req.params.pdfId;
@@ -163,7 +179,7 @@ app.get('/getpdf/:pdfId', async (req, res) => {
   try {
     const connection = await mysql.createConnection(dbConfig);
     const [rows] = await connection.execute(
-      'SELECT id, DATE_FORMAT(selected_date, "%Y-%m-%d") AS selected_date, main_glue_pdf, promoter_pdf, main_glue_pdf_name, promoter_pdf_name, auditStatus FROM pdfs WHERE id = ?',
+      'SELECT id, DATE_FORMAT(selected_date, "%Y-%m-%d") AS selected_date, main_glue_pdf, promoter_pdf, main_glue_pdf_name, promoter_pdf_name, auditStatus, main_glue_status, promoter_status FROM pdfs WHERE id = ?',
       [pdfId]
     );
 
@@ -171,12 +187,14 @@ app.get('/getpdf/:pdfId', async (req, res) => {
       const pdfData = rows[0];
       res.json({
         id: pdfData.id,
-        selectedDate: pdfData.selected_date, // This will now be formatted as 'YYYY-MM-DD'
+        selectedDate: pdfData.selected_date,
         mainGluePdf: pdfData.main_glue_pdf.toString('base64'),
         promoterPdf: pdfData.promoter_pdf.toString('base64'),
         mainGluePdfName: pdfData.main_glue_pdf_name,
         promoterPdfName: pdfData.promoter_pdf_name,
-        auditStatus: pdfData.auditStatus
+        auditStatus: pdfData.auditStatus,
+        mainGlueStatus: pdfData.main_glue_status,
+        promoterStatus: pdfData.promoter_status
       });
     } else {
       res.status(404).send('PDF not found');
@@ -188,7 +206,6 @@ app.get('/getpdf/:pdfId', async (req, res) => {
     res.status(500).send('Error fetching PDF');
   }
 });
-
 
 
 app.delete('/deletepdf/:id', async (req, res) => {
@@ -249,6 +266,38 @@ app.put('/updatepdf/:id', async (req, res) => {
     res.status(500).send('Error updating record: ' + error.message);
   }
 });
+
+// Update PDF status
+app.put('/updateStatus', async (req, res) => {
+  const { id, type, status } = req.body; // Assuming you send the ID, the type of PDF (mainGlue or promoter), and the new status
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Determine the column name based on the type of PDF
+    const columnName = type === 'main' ? 'main_glue_status' : 'promoter_status';
+
+    // SQL query to update the status of the specified PDF
+    const sql = `UPDATE pdfs SET ${columnName} = ? WHERE id = ?`;
+    const values = [status, id];
+
+    // Execute the query
+    const [result] = await connection.execute(sql, values);
+
+    // Close the connection
+    await connection.end();
+
+    if (result.affectedRows > 0) {
+      res.send('Status updated successfully');
+    } else {
+      res.status(404).send('PDF not found');
+    }
+  } catch (error) {
+    console.error('Error updating status:', error.message);
+    res.status(500).send('Error updating status');
+  }
+});
+
 
 
 
