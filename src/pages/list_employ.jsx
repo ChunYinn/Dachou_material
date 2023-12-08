@@ -37,8 +37,9 @@ export default function List_PDFs() {
     </div>
   );
 
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date();
+  // Get today's date in YYYY-MM-DD format TW GMT+8
+  const now = new Date();
+  const today = new Date(now.getTime() + 8 * 60 * 60 * 1000);
   const todayStr = today.toISOString().split('T')[0];
 
   return (

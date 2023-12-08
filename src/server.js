@@ -140,7 +140,8 @@ app.get('/getpdfs24hrs', async (req, res) => {
     const connection = await mysql.createConnection(dbConfig);
 
     // Get today's date in YYYY-MM-DD format
-    const today = new Date();
+    const now = new Date();
+    const today = new Date(now.getTime() + 8 * 60 * 60 * 1000);
     const todayStr = today.toISOString().split('T')[0];
 
     // Calculate tomorrow's date by adding one day to today
