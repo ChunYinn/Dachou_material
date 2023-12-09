@@ -145,7 +145,7 @@ app.get('/getpdfs24hrs', async (req, res) => {
     const todayStr = today.toISOString().split('T')[0];
 
     const fiveDaysLater = new Date(today);
-    fiveDaysLater.setDate(today.getDate() + 4); // Add 4 because we are including today
+    fiveDaysLater.setDate(today.getDate() + 3); // Add 4 because we are including today
     const fiveDaysLaterStr = fiveDaysLater.toISOString().split('T')[0];
 
     // SQL query to select data from the pdfs table for today and tomorrow
