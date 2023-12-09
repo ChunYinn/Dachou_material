@@ -144,10 +144,9 @@ app.get('/getpdfs24hrs', async (req, res) => {
     const today = new Date(now.getTime() + 8 * 60 * 60 * 1000);
     const todayStr = today.toISOString().split('T')[0];
 
-    // Calculate tomorrow's date by adding one day to today
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const fiveDaysLater = new Date(today);
+    fiveDaysLater.setDate(today.getDate() + 4); // Add 4 because we are including today
+    const fiveDaysLaterStr = fiveDaysLater.toISOString().split('T')[0];
 
     // SQL query to select data from the pdfs table for today and tomorrow
     const sql = `
@@ -165,7 +164,7 @@ app.get('/getpdfs24hrs', async (req, res) => {
     `;
 
     // Execute the query with today's and tomorrow's date
-    const [rows] = await connection.execute(sql, [todayStr, tomorrowStr]);
+    const [rows] = await connection.execute(sql, [todayStr, fiveDaysLaterStr]);
 
     // Send the data back to the client
     res.json(rows);

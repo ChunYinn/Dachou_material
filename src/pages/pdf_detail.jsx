@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef  } from 'react';
+import React, { useEffect, useState  } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 
@@ -182,6 +182,7 @@ const PDFDetail = () => {
           src={selectedPdf}
           style={{ width: '300%', height: '1000px' }}//set dynamic
           frameBorder="0"
+          title='PDF Viewer'
         />
       )}
     </div>
