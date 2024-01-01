@@ -133,7 +133,7 @@ app.get('/getpdfs', async (req, res) => {
 });
 
 
-// Endpoint to fetch data from the pdfs table for today and tomorrow
+// Endpoint to fetch data from the pdfs table for ***next four days***
 app.get('/getpdfs24hrs', async (req, res) => {
   try {
     // Create a new MySQL connection
@@ -301,6 +301,94 @@ app.put('/updateStatus', async (req, res) => {
   }
 });
 
+//-------------------material assign------------------
+app.get('/get-materials', async (req, res) => {
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `
+      SELECT id, 
+             DATE_FORMAT(CONVERT_TZ(production_date, '+00:00', '+08:00'), '%Y-%m-%d') as production_date, 
+             material_id, 
+             total_demand, 
+             production_sequence, 
+             production_machine 
+      FROM material_assignments 
+      ORDER BY production_date DESC, production_sequence ASC`;
+    const [materials] = await connection.execute(sql);
+    await connection.end();
+    res.json(materials);
+  } catch (error) {
+    console.error('Error fetching materials:', error.message);
+    res.status(500).send('Error fetching materials');
+  }
+});
+
+
+app.post('/assign-material', async (req, res) => {
+  try {
+    // Extracting form data
+    const { production_date, material_id, total_demand, production_sequence, production_machine } = req.body;
+
+    // Validate the inputs
+    if (!production_date || !material_id || !total_demand || !production_sequence || !production_machine) {
+      return res.status(400).send('All fields are required');
+    }
+
+    // Adjust the production_date to UTC time
+    const localDate = new Date(production_date);
+    localDate.setHours(localDate.getHours() + 8); // Taiwan is UTC+8
+    const utcDate = localDate.toISOString().split('T')[0]; // Format to YYYY-MM-DD
+
+    // Create a new MySQL connection
+    const connection = await mysql.createConnection(dbConfig);
+
+    // SQL query to insert data into the material_assignments table
+    const sql = `
+      INSERT INTO material_assignments (production_date, material_id, total_demand, production_sequence, production_machine) 
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    const values = [utcDate, material_id, total_demand, production_sequence, production_machine];
+
+    // Execute the query
+    await connection.execute(sql, values);
+
+    // Close the connection
+    await connection.end();
+
+    res.send('Material assignment stored successfully');
+  } catch (error) {
+    console.error('Error saving material assignment:', error.message);
+    res.status(500).send('Error saving material assignment: ' + error.message);
+  }
+});
+
+app.delete('/delete-material/:id', async (req, res) => {
+  try {
+    const { id } = req.params; // Extract the material ID from the URL
+
+    // Create a new MySQL connection
+    const connection = await mysql.createConnection(dbConfig);
+
+    // SQL query to delete the material
+    const sql = 'DELETE FROM material_assignments WHERE id = ?'; // Replace 'material_assignments' with your actual table name
+    const values = [id];
+
+    // Execute the query
+    const [result] = await connection.execute(sql, values);
+
+    // Close the connection
+    await connection.end();
+
+    if (result.affectedRows === 0) {
+      res.status(404).send('Material not found');
+    } else {
+      res.send('Material deleted successfully');
+    }
+  } catch (error) {
+    console.error('Error deleting material:', error.message);
+    res.status(500).send('Error deleting material');
+  }
+});
 
 
 
