@@ -6,9 +6,10 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import TextField from '@mui/material/TextField';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 export default function MaterialAssign() {
-
+  const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [materials, setMaterials] = useState([]); // State to store the materials
 
@@ -29,20 +30,31 @@ export default function MaterialAssign() {
 
   // Function to handle adding new material
   const handleAddClick = (assignmentData) => {
-    axios.post('http://localhost:5000/assign-material', assignmentData, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-    .then(() => {
-      fetchMaterials(); // Fetch the updated list of materials
-      setIsDialogOpen(false); // Close the dialog
-      console.log('Material added!');
-    })
-    .catch(error => {
-      console.error("Error submitting data", error);
-    });
+    axios.post('http://localhost:5000/assign-material', assignmentData)
+      .then(response => {
+        console.log('handleAddClick response');
+        fetchMaterials();
+        setIsDialogOpen(false);
+        const materialAssignId = response.data.materialAssignId;
+        console.log('materialAssignId', materialAssignId);
+        calculateAndStoreFormula(materialAssignId, assignmentData);
+        console.log('Material added!');
+      })
+      .catch(error => {
+        console.error("Error submitting data", error);
+      });
   };
+  
+  const calculateAndStoreFormula = (materialAssignId, assignmentData) => {
+    axios.post('http://localhost:5000/calculate-and-store-formula', { ...assignmentData, materialAssignId })
+      .then(response => {
+        console.log('Formula calculation and storage successful');
+      })
+      .catch(error => {
+        console.error('Error in formula calculation and storage', error);
+      });
+  };
+  
 
   // Function to handle deleting a material
   const handleDelete = (materialId) => {
@@ -78,14 +90,9 @@ export default function MaterialAssign() {
             <button
               type="button"
               className="block w-32 rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              onClick={() => navigate('/daily-collect')}
             >
-              主膠領料
-            </button>
-            <button
-              type="button"
-              className="block w-32 rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              促進劑領料
+              領料單查看
             </button>
           </div>
         </div>
@@ -118,7 +125,7 @@ export default function MaterialAssign() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {materials.map((material) => (
-                      <tr key={material.id}>
+                      <tr key={material.material_assign_id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">
                           {material.production_date}
                         </td>
@@ -127,7 +134,7 @@ export default function MaterialAssign() {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{material.production_sequence}</td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{material.production_machine}</td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
-                          <button className="text-red-600 hover:text-red-900 font-bold" onClick={() => handleDelete(material.id)}>
+                          <button className="text-red-600 hover:text-red-900 font-bold" onClick={() => handleDelete(material.material_assign_id)}>
                             刪除
                           </button>
                         </td>
@@ -156,6 +163,13 @@ function DialogComponent({ isOpen, onClose, onSubmit }) {
   const [order, setOrder] = useState('');
   const [location, setLocation] = useState('內');
 
+  const generateBatchNumber = (date, sequence) => {
+    const year = date.format('YY'); // Last two digits of the year
+    const monthDay = date.format('MMDD'); // Month and day
+    const formattedSequence = sequence.padStart(2, '0'); // Ensure sequence is two digits
+    return `${year}${monthDay}-${formattedSequence}`;
+  };
+
   const prepareDataAndSubmit = () => {
     if (!selectedDate || !glueId || !demand || !order || !location) {
       alert("Please fill in all fields.");
@@ -163,12 +177,16 @@ function DialogComponent({ isOpen, onClose, onSubmit }) {
     }
     const taiwanDate = selectedDate.add(8, 'hour').format('YYYY-MM-DD');
 
+    // Generate batch number
+    const batchNumber = generateBatchNumber(selectedDate, order);
+
     const assignmentData = {
       production_date: taiwanDate,
       material_id: glueId,
       total_demand: demand,
       production_sequence: order,
       production_machine: location,
+      batch_number: batchNumber,
     };
 
     onSubmit(assignmentData); // Call the onSubmit prop function

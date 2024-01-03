@@ -301,12 +301,12 @@ app.put('/updateStatus', async (req, res) => {
   }
 });
 
-//-------------------material assign------------------
+//-------------------material assign--------------------------------------------------------------------------
 app.get('/get-materials', async (req, res) => {
   try {
     const connection = await mysql.createConnection(dbConfig);
     const sql = `
-      SELECT id, 
+      SELECT material_assign_id, 
              DATE_FORMAT(CONVERT_TZ(production_date, '+00:00', '+08:00'), '%Y-%m-%d') as production_date, 
              material_id, 
              total_demand, 
@@ -327,7 +327,8 @@ app.get('/get-materials', async (req, res) => {
 app.post('/assign-material', async (req, res) => {
   try {
     // Extracting form data
-    const { production_date, material_id, total_demand, production_sequence, production_machine } = req.body;
+    console.log('Assigning material endpoint hit');
+    const { production_date, material_id, total_demand, production_sequence, production_machine, batch_number } = req.body;
 
     // Validate the inputs
     if (!production_date || !material_id || !total_demand || !production_sequence || !production_machine) {
@@ -344,53 +345,154 @@ app.post('/assign-material', async (req, res) => {
 
     // SQL query to insert data into the material_assignments table
     const sql = `
-      INSERT INTO material_assignments (production_date, material_id, total_demand, production_sequence, production_machine) 
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO material_assignments 
+      (production_date, material_id, total_demand, production_sequence, production_machine, batch_number) 
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
-    const values = [utcDate, material_id, total_demand, production_sequence, production_machine];
+    const values = [utcDate, material_id, total_demand, production_sequence, production_machine, batch_number];
 
     // Execute the query
-    await connection.execute(sql, values);
+    const [result] = await connection.execute(sql, values);
+
+    // Get the auto-generated ID
+    const materialAssignId = result.insertId;
 
     // Close the connection
     await connection.end();
 
-    res.send('Material assignment stored successfully');
+    // Send back the material_assign_id
+    res.json({ materialAssignId });
   } catch (error) {
     console.error('Error saving material assignment:', error.message);
     res.status(500).send('Error saving material assignment: ' + error.message);
   }
 });
 
+
 app.delete('/delete-material/:id', async (req, res) => {
   try {
-    const { id } = req.params; // Extract the material ID from the URL
+    const { id } = req.params;
 
     // Create a new MySQL connection
     const connection = await mysql.createConnection(dbConfig);
 
-    // SQL query to delete the material
-    const sql = 'DELETE FROM material_assignments WHERE id = ?'; // Replace 'material_assignments' with your actual table name
-    const values = [id];
+    // Begin a new transaction
+    await connection.beginTransaction();
 
-    // Execute the query
-    const [result] = await connection.execute(sql, values);
+    // SQL query to delete from material_assignments
+    let sql = 'DELETE FROM material_assignments WHERE material_assign_id = ?';
+    let values = [id];
+
+    // Execute the query to delete from material_assignments
+    let [result] = await connection.execute(sql, values);
+
+    // If nothing was deleted, rollback and return 404
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      res.status(404).send('Material not found');
+      return;
+    }
+
+    // SQL query to delete from daily_material_formula
+    sql = 'DELETE FROM daily_material_formula WHERE material_assign_id = ?';
+
+    // Execute the query to delete from daily_material_formula
+    await connection.execute(sql, values);
+
+    // Commit the transaction
+    await connection.commit();
 
     // Close the connection
     await connection.end();
 
-    if (result.affectedRows === 0) {
-      res.status(404).send('Material not found');
-    } else {
-      res.send('Material deleted successfully');
-    }
+    res.send('Material and associated formulas deleted successfully');
   } catch (error) {
     console.error('Error deleting material:', error.message);
+    await connection.rollback(); // Rollback the transaction on error
+    await connection.end(); // Close the connection whether there was an error or not
     res.status(500).send('Error deleting material');
   }
 });
 
 
+//calculate the amount needed for each material
+const getFormulaData = async (material_id) => {
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `SELECT * FROM join_formula WHERE material_id = ?`;
+    const [formulaData] = await connection.execute(sql, [material_id]);
+    await connection.end();
+    return formulaData;
+  } catch (error) {
+    console.error('Error fetching formula data:', error.message);
+    throw new Error('Error fetching formula data');
+  }
+};
+
+const calculateFormula = (formulaData, totalDemand) => {
+  const totalUsageKg = formulaData.reduce((acc, item) => acc + parseFloat(item.usage_kg), 0);
+  console.log(`Total Usage Kg: ${totalUsageKg}, Total Demand: ${totalDemand}`);
+  
+  if (totalUsageKg === 0) {
+    throw new Error('Total usage kg is 0, cannot calculate formula.');
+  }
+
+  const ratio = totalDemand / totalUsageKg;
+
+  return formulaData.map(item => ({
+    chemical_raw_material_id: item.chemical_raw_material_id,
+    chemical_raw_material_name: item.chemical_raw_material_name,
+    usage_kg: item.usage_kg * ratio
+  }));
+};
+
+
+const storeFormulaResults = async (materialAssignId, assignmentData, results) => {
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const { material_id, total_demand, production_sequence, production_machine, batch_number } = assignmentData;
+
+    for (const result of results) {
+      const sql = `
+        INSERT INTO daily_material_formula 
+        (material_assign_id, material_id, total_demand, production_sequence, production_machine, chemical_raw_material_id, chemical_raw_material_name, usage_kg, batch_number) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      const values = [materialAssignId, material_id, total_demand, production_sequence, production_machine, result.chemical_raw_material_id, result.chemical_raw_material_name, result.usage_kg, batch_number];
+      await connection.execute(sql, values);
+    }
+    await connection.end();
+  } catch (error) {
+    console.error('Error storing formula results:', error.message);
+    throw new Error('Error storing formula results');
+  }
+};
+
+app.post('/calculate-and-store-formula', async (req, res) => {
+  console.log('Calculating formula endpoint hit');
+  const { materialAssignId, material_id, total_demand, production_sequence, production_machine, batch_number } = req.body;
+
+  try {
+    // Fetch formula data
+    const formulaData = await getFormulaData(material_id);
+    if (!formulaData) {
+      return res.status(404).send('Formula data not found for the given material ID');
+    }
+
+    // Perform calculations
+    const calculatedResults = calculateFormula(formulaData, total_demand);
+
+    // Store results in the daily_material_formula table
+    await storeFormulaResults(materialAssignId, req.body, calculatedResults);
+
+    res.send('Formula calculations stored successfully');
+  } catch (error) {
+    console.error('Error in processing formula:', error.message);
+    res.status(500).send('Error in processing formula');
+  }
+});
+
+//---------------------------------------------------------------------------------------------------------
 
 const server = app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

@@ -8,6 +8,7 @@ import UploadPDF from './pages/pdf_upload';
 import EmployeeList from './pages/list_employ';
 import PDFDetail from './pages/pdf_detail';
 import MaterialAssign from './pages/material_assign';
+import MaterialByDate from './pages/daily_material_collect';
 
 function App() {
   const location = useLocation();
@@ -36,6 +37,7 @@ function App() {
             <Route path="/list" element={<ListPDFs />} />
             <Route path="/upload" element={<UploadPDF />} />
             <Route path="/assign" element={<MaterialAssign />} />
+            <Route path="/daily-collect" element={<MaterialByDate />} />
           </>
         )}
 
