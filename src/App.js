@@ -9,6 +9,7 @@ import EmployeeList from './pages/list_employ';
 import PDFDetail from './pages/pdf_detail';
 import MaterialAssign from './pages/material_assign';
 import MaterialByDate from './pages/daily_material_collect';
+import DailyMaterialDetail from './pages/daily_material_detail';
 
 function App() {
   const location = useLocation();
@@ -47,7 +48,7 @@ function App() {
         )}
 
         <Route path="/employee" element={<EmployeeList />} />
-        <Route path="/pdf/:pdfId" element={<PDFDetail />} />
+        <Route path="/details/:date" element={<DailyMaterialDetail />} />
 
         {/* Redirect non-manager users trying to access manager-only routes */}
         {!isManager && isLoggedIn && (

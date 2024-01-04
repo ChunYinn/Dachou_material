@@ -492,7 +492,69 @@ app.post('/calculate-and-store-formula', async (req, res) => {
   }
 });
 
-//---------------------------------------------------------------------------------------------------------
+//---------------------Daily Status------------------------------------------------------------------------------------
+app.get('/get-daily-material-status', async (req, res) => {
+  try {
+    // Create a new MySQL connection
+    const connection = await mysql.createConnection(dbConfig);
+
+    // SQL query to select data from the daily_status table
+    const sql = `
+      SELECT 
+        id, 
+        DATE_FORMAT(selected_date, '%Y-%m-%d') as selected_date, 
+        main_glue_status, 
+        promoter_status,
+        auditStatus
+      FROM daily_status 
+      ORDER BY selected_date DESC
+    `;
+
+    // Execute the query
+    const [rows] = await connection.execute(sql);
+
+    // Close the connection
+    await connection.end();
+
+    // Send the data back to the client
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching data:', error.message);
+    res.status(500).send('Error fetching data: ' + error.message);
+  }
+});
+
+// Update audit status (by toggle button)
+app.put('/updateAuditStatus/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { auditStatus } = req.body;
+
+    // Create a new MySQL connection
+    const connection = await mysql.createConnection(dbConfig);
+
+    // SQL query to update auditStatus in the daily_status table
+    const sql = 'UPDATE daily_status SET auditStatus = ? WHERE id = ?';
+    const values = [auditStatus, id];
+
+    // Execute the query
+    const [result] = await connection.execute(sql, values);
+
+    // Close the connection
+    await connection.end();
+
+    if (result.affectedRows === 0) {
+      res.status(404).send('Record not found');
+    } else {
+      res.send('Audit status updated successfully');
+    }
+  } catch (error) {
+    console.error('Error updating audit status:', error.message);
+    res.status(500).send('Error updating audit status: ' + error.message);
+  }
+});
+
+
 
 const server = app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

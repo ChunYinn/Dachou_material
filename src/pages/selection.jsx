@@ -8,7 +8,7 @@ export default function Selection() {
   };
 
   const navigateList = () => {
-    navigate('/list');
+    navigate('/daily-collect')
   };
 
   return (

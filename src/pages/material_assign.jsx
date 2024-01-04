@@ -7,11 +7,13 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import TextField from '@mui/material/TextField';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { createTheme, ThemeProvider } from '@mui/material/styles'
 
 export default function MaterialAssign() {
   const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [materials, setMaterials] = useState([]); // State to store the materials
+  // const [editingMaterial, setEditingMaterial] = useState(null);
 
   // Function to fetch materials
   const fetchMaterials = () => {
@@ -32,13 +34,10 @@ export default function MaterialAssign() {
   const handleAddClick = (assignmentData) => {
     axios.post('http://localhost:5000/assign-material', assignmentData)
       .then(response => {
-        console.log('handleAddClick response');
         fetchMaterials();
         setIsDialogOpen(false);
         const materialAssignId = response.data.materialAssignId;
-        console.log('materialAssignId', materialAssignId);
         calculateAndStoreFormula(materialAssignId, assignmentData);
-        console.log('Material added!');
       })
       .catch(error => {
         console.error("Error submitting data", error);
@@ -72,7 +71,9 @@ export default function MaterialAssign() {
     setIsDialogOpen(!isDialogOpen);
   };
 
+
   return (
+    
     <div className="flex justify-center items-center mt-14">
         <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
@@ -99,41 +100,49 @@ export default function MaterialAssign() {
         <div className="mt-8 flow-root">
           <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg" style={{ maxHeight: '60vh', overflowY: 'auto' }} >
                 <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-md font-semibold text-gray-900 sm:pl-6">
                         打料日期
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         膠料編號
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         總需求量
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         打料順序
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         機台
                       </th>
-                      <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                      <th scope="col" className="w-5 px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        <span className="sr-only">update</span>
+                      </th>
+                      <th scope="col" className="relative w-5 py-3.5 pl-3 pr-4 sm:pr-6">
                         <span className="sr-only">delete</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {materials.map((material) => (
-                      <tr key={material.material_assign_id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">
+                    {materials.map((material, index) => (
+                      <tr key={material.material_assign_id} className={`h-14`}>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3  text-gray-500 sm:pl-6">
                           {material.production_date}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{material.material_id}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{material.total_demand}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{material.production_sequence}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{material.production_machine}</td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
+                        <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.material_id}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.total_demand}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.production_sequence}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.production_machine}</td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
+                          <button className="text-yellow-600 hover:text-yellow-900 font-bold" onClick={() => handleDelete(material.material_assign_id)}>
+                            編輯
+                          </button>
+                        </td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
                           <button className="text-red-600 hover:text-red-900 font-bold" onClick={() => handleDelete(material.material_assign_id)}>
                             刪除
                           </button>
@@ -192,6 +201,25 @@ function DialogComponent({ isOpen, onClose, onSubmit }) {
     onSubmit(assignmentData); // Call the onSubmit prop function
   };
   
+  // Create a custom theme
+  const newTheme = createTheme({
+    components: {
+      // Your custom overrides
+      MuiPickersToolbar: {
+        styleOverrides: {
+          root: {
+            color: '#1565c0',
+            borderRadius: 2,
+            borderWidth: 1,
+            borderColor: '#2196f3',
+            border: '1px solid',
+            backgroundColor: '#bbdefb',
+          },
+        },
+      },
+      // Add other component overrides if needed
+    },
+  });
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -242,14 +270,16 @@ function DialogComponent({ isOpen, onClose, onSubmit }) {
                       新增領料單
                     </Dialog.Title>
                     <div className="mt-9">
-                      <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                          label="打料日期"
-                          value={selectedDate}
-                          onChange={setSelectedDate}
-                          renderInput={(params) => <TextField {...params} />}
-                        />
-                      </LocalizationProvider>
+                      <ThemeProvider theme={newTheme}>
+                          <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                              label="打料日期"
+                              value={selectedDate}
+                              onChange={setSelectedDate}
+                              renderInput={(params) => <TextField {...params}  />}
+                            />
+                          </LocalizationProvider>
+                        </ThemeProvider>
                       <div>
                         <label htmlFor="glue_id" className="block mt-3 text-sm font-bold leading-6 text-gray-900">
                           膠料編號
@@ -325,16 +355,5 @@ function DialogComponent({ isOpen, onClose, onSubmit }) {
         </div>
       </Dialog>
     </Transition.Root>
-  );
-}
-export function BasicDatePicker({ onChange }) {
-  return (
-    <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <DatePicker
-        label="打料日期"
-        onChange={onChange}
-        renderInput={(params) => <TextField {...params} />}
-      />
-    </LocalizationProvider>
   );
 }
