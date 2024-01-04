@@ -553,6 +553,38 @@ app.put('/updateAuditStatus/:id', async (req, res) => {
     res.status(500).send('Error updating audit status: ' + error.message);
   }
 });
+//--------- delete daily material----------------
+// Endpoint to get material details by date
+app.get('/get-material-detail/:date', async (req, res) => {
+  const selectedDate = req.params.date;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Convert selectedDate from yyyy-mm-dd to ddmmyy format to match batch_number
+    const dateParts = selectedDate.split('-');
+    const formattedDate = `${dateParts[0].substring(2)}${dateParts[1]}${dateParts[2]}`; // Gives you "240104" for "2024-01-04"
+
+    // SQL query to select data where the date part of batch_number matches formattedDate
+    const sql = `
+      SELECT *
+      FROM daily_material_formula
+      WHERE batch_number LIKE CONCAT(?, '%')
+    `;
+
+    // Execute the query
+    const [rows] = await connection.execute(sql, [formattedDate]);
+
+    // Close the connection
+    await connection.end();
+
+    // Send the data back to the client
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching material details:', error.message);
+    res.status(500).send('Error fetching material details');
+  }
+});
 
 
 
