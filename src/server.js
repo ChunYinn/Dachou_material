@@ -501,7 +501,7 @@ app.get('/get-daily-material-status', async (req, res) => {
     // SQL query to select data from the daily_status table
     const sql = `
       SELECT 
-        id, 
+        daily_status_id, 
         DATE_FORMAT(selected_date, '%Y-%m-%d') as selected_date, 
         main_glue_status, 
         promoter_status,
@@ -525,17 +525,17 @@ app.get('/get-daily-material-status', async (req, res) => {
 });
 
 // Update audit status (by toggle button)
-app.put('/updateAuditStatus/:id', async (req, res) => {
+app.put('/updateAuditStatus/:date', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { date } = req.params;
     const { auditStatus } = req.body;
 
     // Create a new MySQL connection
     const connection = await mysql.createConnection(dbConfig);
 
     // SQL query to update auditStatus in the daily_status table
-    const sql = 'UPDATE daily_status SET auditStatus = ? WHERE id = ?';
-    const values = [auditStatus, id];
+    const sql = 'UPDATE daily_status SET auditStatus = ? WHERE selected_date = ?';
+    const values = [auditStatus, date];
 
     // Execute the query
     const [result] = await connection.execute(sql, values);
@@ -553,7 +553,7 @@ app.put('/updateAuditStatus/:id', async (req, res) => {
     res.status(500).send('Error updating audit status: ' + error.message);
   }
 });
-//--------- delete daily material----------------
+//--------- get daily material----------------
 // Endpoint to get material details by date
 app.get('/get-material-detail/:date', async (req, res) => {
   const selectedDate = req.params.date;

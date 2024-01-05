@@ -104,11 +104,11 @@ export default function MaterialByDate() {
                 </thead>
                 <tbody className="bg-white">
                   {filteredData.map((data) => (
-                    <tr key={data.id} className="even:bg-gray-50">
+                    <tr key={data.daily_status_id} className="even:bg-gray-50">
 
                       <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-gray-500">{data.selected_date}</td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm">
-                        <ToggleBTN initialStatus={data.auditStatus} id={data.id}/>
+                        <ToggleBTN initialStatus={data.auditStatus} date={data.selected_date}/>
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         {renderStatusWithIndicator(data.main_glue_status)}
@@ -140,13 +140,13 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
 }
 
-export function ToggleBTN({ initialStatus, id }) {
+export function ToggleBTN({ initialStatus, date }) {
   const [enabled, setEnabled] = useState(initialStatus === 'Finished');
   const updateStatus = async () => {
-    if (window.confirm(`您確定要改變 "ID${id}" 的審核狀態?`)) {
+    if (window.confirm(`您確定要改變 "日期: ${date}" 的審核狀態?`)) {
       try {
         const newStatus = enabled ? 'Not Finish' : 'Finished';
-        await axios.put(`http://localhost:5000/updateAuditStatus/${id}`, { auditStatus: newStatus });
+        await axios.put(`http://localhost:5000/updateAuditStatus/${date}`, { auditStatus: newStatus });
         setEnabled(!enabled); // Toggle the state only after successful DB update
       } catch (error) {
         console.error('Error updating audit status:', error);
