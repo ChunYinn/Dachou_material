@@ -553,7 +553,7 @@ app.put('/updateAuditStatus/:date', async (req, res) => {
     res.status(500).send('Error updating audit status: ' + error.message);
   }
 });
-//--------- get daily material----------------
+//--------- get daily material detail----------------
 // Endpoint to get material details by date
 app.get('/get-material-detail/:date', async (req, res) => {
   const selectedDate = req.params.date;
@@ -585,6 +585,55 @@ app.get('/get-material-detail/:date', async (req, res) => {
     res.status(500).send('Error fetching material details');
   }
 });
+
+// Backend: Update collecting status
+app.put('/update-collecting-status/:id', async (req, res) => {
+  const { id } = req.params;
+  const { collecting_finished } = req.body;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = 'UPDATE daily_material_formula SET collecting_finished = ? WHERE daily_material_formula_id = ?';
+    const values = [collecting_finished, id];
+
+    const [result] = await connection.execute(sql, values);
+    await connection.end();
+
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Record not found');
+    }
+
+    res.send('Collecting status updated successfully');
+  } catch (error) {
+    console.error('Error updating collecting status:', error);
+    res.status(500).send('Error updating collecting status');
+  }
+});
+
+// Backend: Update notes
+app.put('/update-notes/:id', async (req, res) => {
+  const { id } = req.params;
+  const { notes } = req.body;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = 'UPDATE daily_material_formula SET notes = ? WHERE daily_material_formula_id = ?';
+    const values = [notes, id];
+
+    const [result] = await connection.execute(sql, values);
+    await connection.end();
+
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Record not found');
+    }
+
+    res.send('Notes updated successfully');
+  } catch (error) {
+    console.error('Error updating notes:', error);
+    res.status(500).send('Error updating notes');
+  }
+});
+
 
 
 
