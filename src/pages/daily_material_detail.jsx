@@ -109,14 +109,6 @@ export default function DailyMaterialDetail() {
     }
   };
 
-  // Add a function to round usage kg
-  const roundUsageKg = (usageKg, buttonType) => {
-    if (buttonType === '主膠領料單') {
-      return Math.ceil(usageKg);
-    }
-    return usageKg;
-  };
-
   return (
     <div className="flex flex-col items-center mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <p className="text-2xl text-indigo-600 font-bold mb-6 mt-12">
@@ -171,7 +163,7 @@ export default function DailyMaterialDetail() {
                     <td className="px-4 py-2 whitespace-nowrap text-md text-gray-500">{material.chemical_raw_material_id}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{material.chemical_raw_material_name}</td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                    {roundUsageKg(material.usage_kg, selectedButton)}
+                    {material.usage_kg}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       <input
