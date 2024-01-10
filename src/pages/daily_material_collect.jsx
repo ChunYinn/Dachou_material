@@ -11,6 +11,9 @@ export default function MaterialByDate() {
   const [filter, setFilter] = useState('');
   const [selectedRow, setSelectedRow] = useState(null);
 
+  // Get the user's role from localStorage
+  const userRole = localStorage.getItem('userRole');
+
   // Function to fetch daily material status
   const fetchDailyMaterial = () => {
     axios.get('http://localhost:5000/get-daily-material-status')
@@ -97,7 +100,7 @@ export default function MaterialByDate() {
                     <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-3 py-3 text-left text-sm font-semibold text-gray-900">
                       促進劑領料狀態
                     </th>
-                    <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">
+                    <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-900" >
                       
                     </th>
                   </tr>
@@ -106,17 +109,19 @@ export default function MaterialByDate() {
                   {filteredData.map((data) => (
                     <tr key={data.daily_status_id} className="even:bg-gray-50">
 
-                      <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-gray-500">{data.selected_date}</td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm">
-                        <ToggleBTN initialStatus={data.auditStatus} date={data.selected_date}/>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-gray-500" style={{ width: '20%' }}>{data.selected_date}</td>
+                      {userRole === 'manager' && (
+                        <td className="whitespace-nowrap px-3 py-4 text-sm">
+                          <ToggleBTN initialStatus={data.auditStatus} date={data.selected_date}/>
+                        </td>
+                      )}
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500" style={{ width: '20%' }}>
                         {renderStatusWithIndicator(data.main_glue_status)}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500" style={{ width: '20%' }}>
                         {renderStatusWithIndicator(data.promoter_status)}
                       </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium">
+                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium" style={{ width: '20%' }}>
                         <button className="text-indigo-600 hover:text-indigo-300 font-bold" onClick={() => viewDetails(data.selected_date)}>
                           查看
                         </button>

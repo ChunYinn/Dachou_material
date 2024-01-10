@@ -129,6 +129,7 @@ export default function DailyMaterialDetail() {
         >
           促進劑領料單
         </button>
+        
       </div>
 
       {/* Iterate over groupedData to display each batch */}
@@ -179,7 +180,7 @@ export default function DailyMaterialDetail() {
                             defaultValue={material.notes}
                             onBlur={(event) => handleNotesChange(material.daily_material_formula_id, event.target.value)}
                             className="w-full px-2 py-1 border-b border-indigo-300 focus:outline-none focus:border-indigo-500" // Tailwind CSS styles for underline only
-                            placeholder="輸入備註..."
+                            placeholder="..."
                           />
                         </td>
                   </tr>
