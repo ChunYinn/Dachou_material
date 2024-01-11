@@ -4,9 +4,6 @@ import Login from "./pages/login";
 import Selection from "./pages/selection";
 import NavBar from "./common/nav";
 import ListPDFs from './pages/list_all';
-import UploadPDF from './pages/pdf_upload';
-import EmployeeList from './pages/list_employ';
-import PDFDetail from './pages/pdf_detail';
 import MaterialAssign from './pages/material_assign';
 import MaterialByDate from './pages/daily_material_collect';
 import DailyMaterialDetail from './pages/daily_material_detail';
@@ -36,23 +33,22 @@ function App() {
           <>
             <Route path="/" element={<Selection />} />
             <Route path="/list" element={<ListPDFs />} />
-            <Route path="/upload" element={<UploadPDF />} />
             <Route path="/assign" element={<MaterialAssign />} />
-            <Route path="/daily-collect" element={<MaterialByDate />} />
           </>
         )}
 
         {/* Routes available for all logged-in users */}
         {!isManager && (
-          <Route path="/" element={<EmployeeList />} />
+          <Route path="/" element={<MaterialByDate />} />
         )}
 
-        <Route path="/employee" element={<EmployeeList />} />
+        <Route path="/daily-collect" element={<MaterialByDate />} />    
+        {/* <Route path="/employee" element={<EmployeeList />} /> */}
         <Route path="/details/:date" element={<DailyMaterialDetail />} />
 
         {/* Redirect non-manager users trying to access manager-only routes */}
         {!isManager && isLoggedIn && (
-          <Route path="*" element={<Navigate to="/employee" replace />} />
+          <Route path="*" element={<Navigate to="/daily-collect" replace />} />
         )}
       </Routes>
     </div>

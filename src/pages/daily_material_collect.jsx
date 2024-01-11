@@ -1,5 +1,3 @@
-import Box from '@mui/material/Box';
-import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +7,6 @@ export default function MaterialByDate() {
   const navigate = useNavigate();
   const [dataList, setDataList] = useState([]);
   const [filter, setFilter] = useState('');
-  const [selectedRow, setSelectedRow] = useState(null);
 
   // Get the user's role from localStorage
   const userRole = localStorage.getItem('userRole');
@@ -25,8 +22,19 @@ export default function MaterialByDate() {
       });
   };
 
+  // Function to fetch daily material status for employee (4 days)
+  const fetchDailyMaterialEmployee = () => {
+    axios.get('http://localhost:5000/get-daily-material-status-employee')
+      .then(response => {
+        setDataList(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching data: ', error);
+      });
+  };
+
   useEffect(() => {
-    fetchDailyMaterial();
+    userRole === 'manager' ? fetchDailyMaterial() : fetchDailyMaterialEmployee();
   }, []);
 
   const viewDetails = (date) => {
@@ -59,14 +67,15 @@ export default function MaterialByDate() {
     data.selected_date.toLowerCase().includes(filter.toLowerCase())
   );
   
+  // Get today's date in YYYY-MM-DD format TW GMT+8
+  const now = new Date();
+  const today = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  const todayStr = today.toISOString().split('T')[0];
 
   return (
     <div className="flex justify-center items-center">
       <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
-
-        
-        
-        {/* Title */}
+     
         {/* Title and Filter Input */}
         <div className="text-center mt-12 mb-4">
           <p className="text-4xl font-bold mb-4">領料單總覽</p>
@@ -106,29 +115,46 @@ export default function MaterialByDate() {
                   </tr>
                 </thead>
                 <tbody className="bg-white">
-                  {filteredData.map((data) => (
-                    <tr key={data.daily_status_id} className="even:bg-gray-50">
+                  {filteredData.length > 0 ? (
+                    filteredData.map((data) => (
+                      <tr key={data.daily_status_id} className="even:bg-gray-50">
 
-                      <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-gray-500" style={{ width: '20%' }}>{data.selected_date}</td>
-                      {userRole === 'manager' && (
-                        <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          <ToggleBTN initialStatus={data.auditStatus} date={data.selected_date}/>
+                        <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-gray-500" style={{ width: '20%' }}>
+                          {data.selected_date === todayStr ? todayStr+' (今日)' : data.selected_date}
                         </td>
-                      )}
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500" style={{ width: '20%' }}>
-                        {renderStatusWithIndicator(data.main_glue_status)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500" style={{ width: '20%' }}>
-                        {renderStatusWithIndicator(data.promoter_status)}
-                      </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium" style={{ width: '20%' }}>
-                        <button className="text-indigo-600 hover:text-indigo-300 font-bold" onClick={() => viewDetails(data.selected_date)}>
-                          查看
-                        </button>
-                      </td>
-                      {/* Add/Delete button or other functionalities as needed */}
-                    </tr>
-                  ))}
+                        {userRole === 'manager' ? (
+                          <td className="whitespace-nowrap px-3 py-4 text-sm">
+                            <ToggleBTN initialStatus={data.auditStatus} date={data.selected_date}/>
+                          </td>
+                        ) : (
+                          <td className="whitespace-nowrap px-3 py-4 text-sm">
+                            <span className={`inline-flex items-center rounded-full px-2 py-1 font-medium 
+                                            ${data.auditStatus === 'Not Finish' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                              {data.auditStatus === 'Not Finish' ? '未審核' : '已審核'}
+                            </span>
+                          </td>
+                        )}
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500" style={{ width: '20%' }}>
+                          {renderStatusWithIndicator(data.main_glue_status)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500" style={{ width: '20%' }}>
+                          {renderStatusWithIndicator(data.promoter_status)}
+                        </td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium" style={{ width: '20%' }}>
+                          <button className="text-indigo-600 hover:text-indigo-300 font-bold" onClick={() => viewDetails(data.selected_date)}>
+                            查看
+                          </button>
+                        </td>
+                        {/* Add/Delete button or other functionalities as needed */}
+                      </tr>))
+                    ) : (
+                      <tr>
+                        <td colSpan="100%" className="text-center align-middle py-10"> {/* Use 100% to span all columns */}
+                          <p className="text-lg text-gray-500 h-10">無資料</p>
+                        </td>
+                      </tr>
+                    )}
+
                 </tbody>
 
               </table>

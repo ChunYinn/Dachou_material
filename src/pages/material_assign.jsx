@@ -8,9 +8,15 @@ import TextField from '@mui/material/TextField';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles'
+import { CalendarIcon } from '@heroicons/react/20/solid'; 
+import '../../src/index.css'
 
 export default function MaterialAssign() {
   const navigate = useNavigate();
+  // State for filters
+  const [dateFilter, setDateFilter] = useState('');
+  const [glueIdFilter, setGlueIdFilter] = useState('');
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [materials, setMaterials] = useState([]); // State to store the materials
   // const [editingMaterial, setEditingMaterial] = useState(null);
@@ -71,6 +77,24 @@ export default function MaterialAssign() {
     setIsDialogOpen(!isDialogOpen);
   };
 
+  //--filter function
+  // Function to handle filter change for date
+  const handleDateFilterChange = (e) => {
+    setDateFilter(e.target.value);
+  };
+
+  // Function to handle filter change for glue ID
+  const handleGlueIdFilterChange = (e) => {
+    setGlueIdFilter(e.target.value);
+  };
+
+  // Filtered materials
+  const filteredMaterials = materials.filter((material) => {
+    return (
+      material.production_date.includes(dateFilter) &&
+      material.material_id.includes(glueIdFilter)
+    );
+  });
 
   return (
     
@@ -104,11 +128,22 @@ export default function MaterialAssign() {
                 <table className="min-w-full divide-y divide-gray-300">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
-                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-md font-semibold text-gray-900 sm:pl-6">
-                        打料日期
+                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-md font-semibold text-gray-900 sm:pl-6" style={{width: "25%"}}>
+                        <div className="flex items-center"> {/* Flex container */}
+                          打料日期
+                          <CalendarIcon className="inline h-5 w-5 ml-2" />
+                        </div>
+                        <input type="text" value={dateFilter} onChange={handleDateFilterChange} className="mt-2 w-1/2 h-7 p-1 border rounded small-placeholder"
+                        placeholder="ex: 01-01"/> {/* Adjusted width */}
                       </th>
-                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
-                        膠料編號
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900" style={{width: "25%"}}>
+                        <div className="flex items-center"> {/* Flex container */}
+                          膠料編號
+                        </div>
+                        <input type="text" value={glueIdFilter} onChange={handleGlueIdFilterChange} 
+                        className="mt-2 w-1/2 h-7 p-1 border rounded small-placeholder"
+                        placeholder="ex: AN-550"/>
+                        
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         總需求量
@@ -128,27 +163,36 @@ export default function MaterialAssign() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {materials.map((material, index) => (
-                      <tr key={material.material_assign_id} className={`h-14`}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3  text-gray-500 sm:pl-6">
-                          {material.production_date}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.material_id}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.total_demand}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.production_sequence}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.production_machine}</td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
-                          <button className="text-yellow-600 hover:text-yellow-900 font-bold" onClick={() => handleDelete(material.material_assign_id)}>
-                            編輯
-                          </button>
-                        </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
-                          <button className="text-red-600 hover:text-red-900 font-bold" onClick={() => handleDelete(material.material_assign_id)}>
-                            刪除
-                          </button>
+                    {filteredMaterials.length > 0 ? (
+                      filteredMaterials.map((material) => (
+                        <tr key={material.material_assign_id} className={`h-14`}>
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3  text-gray-500 sm:pl-6">
+                            {material.production_date}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.material_id}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.total_demand}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.production_sequence}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.production_machine}</td>
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
+                            <button className="text-yellow-600 hover:text-yellow-900 font-bold" onClick={() => handleDelete(material.material_assign_id)}>
+                              編輯
+                            </button>
+                          </td>
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
+                            <button className="text-red-600 hover:text-red-900 font-bold" onClick={() => handleDelete(material.material_assign_id)}>
+                              刪除
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="100%" className="text-center align-middle py-10"> {/* Use 100% to span all columns */}
+                          <p className="text-lg text-gray-500 h-10">無資料</p>
                         </td>
                       </tr>
-                    ))}
+                    )}
+
                   </tbody>
                 </table>
               </div>

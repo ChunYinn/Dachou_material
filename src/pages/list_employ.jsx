@@ -113,7 +113,7 @@ export default function List_PDFs() {
                   ) : (
                     <tr>
                       <td colSpan="6" className="text-center py-10 text-lg text-gray-500">
-                        今日無資料
+                        無資料
                       </td>
                     </tr>
                   )}

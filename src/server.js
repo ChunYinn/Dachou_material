@@ -524,6 +524,49 @@ app.get('/get-daily-material-status', async (req, res) => {
   }
 });
 
+//fetch daily material status for employee (4 days)
+app.get('/get-daily-material-status-employee', async (req, res) => {
+  try {
+    // Create a new MySQL connection
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Get today's date and calculate the date for the next three days
+    const now = new Date();
+    const today = new Date(now.getTime() + 8 * 60 * 60 * 1000); // Adjusted for time zone
+    const todayStr = today.toISOString().split('T')[0];
+
+    const threeDaysLater = new Date(today);
+    threeDaysLater.setDate(today.getDate() + 3); // Three days after today
+    const threeDaysLaterStr = threeDaysLater.toISOString().split('T')[0];
+
+    // SQL query to select data from the daily_status table for the next four days
+    const sql = `
+      SELECT 
+        daily_status_id, 
+        DATE_FORMAT(selected_date, '%Y-%m-%d') as selected_date, 
+        main_glue_status, 
+        promoter_status,
+        auditStatus
+      FROM daily_status 
+      WHERE selected_date BETWEEN ? AND ?
+      ORDER BY selected_date
+    `;
+
+    // Execute the query with the date range
+    const [rows] = await connection.execute(sql, [todayStr, threeDaysLaterStr]);
+
+    // Close the connection
+    await connection.end();
+
+    // Send the data back to the client
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching data:', error.message);
+    res.status(500).send('Error fetching data: ' + error.message);
+  }
+});
+
+
 // Update audit status (by toggle button)
 app.put('/updateAuditStatus/:date', async (req, res) => {
   try {
@@ -585,6 +628,62 @@ app.get('/get-material-detail/:date', async (req, res) => {
     res.status(500).send('Error fetching material details');
   }
 });
+
+// fetch collector name
+app.get('/get-collector-names/:date', async (req, res) => {
+  const { date } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = 'SELECT main_glue_collector, promoter_collector FROM daily_status WHERE selected_date = ?';
+    const [rows] = await connection.execute(sql, [date]);
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      res.status(404).send('No collector names found for the selected date');
+    }
+  } catch (error) {
+    console.error('Error getting collector names:', error);
+    res.status(500).send('Error getting collector names');
+  }
+});
+
+//update collector name
+app.put('/update-collector/:type/:date', async (req, res) => {
+  const { type, date } = req.params;
+  const { collector } = req.body;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    let sql;
+    
+    // Check the type and set the appropriate SQL query
+    if (type === 'main-glue') {
+      sql = 'UPDATE daily_status SET main_glue_collector = ? WHERE selected_date = ?';
+    } else if (type === 'promoter') {
+      sql = 'UPDATE daily_status SET promoter_collector = ? WHERE selected_date = ?';
+    } else {
+      return res.status(400).send('Invalid collector type');
+    }
+
+    const values = [collector, date];
+    const [result] = await connection.execute(sql, values);
+    await connection.end();
+
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Record not found');
+    }
+
+    res.send(`${type} collector name updated successfully`);
+  } catch (error) {
+    console.error(`Error updating ${type} collector name:`, error);
+    res.status(500).send(`Error updating ${type} collector name`);
+  }
+});
+
+
 
 // Backend: Update collecting status
 app.put('/update-collecting-status/:id', async (req, res) => {
