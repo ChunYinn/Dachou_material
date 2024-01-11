@@ -3,7 +3,6 @@ import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import Login from "./pages/login";
 import Selection from "./pages/selection";
 import NavBar from "./common/nav";
-import ListPDFs from './pages/list_all';
 import MaterialAssign from './pages/material_assign';
 import MaterialByDate from './pages/daily_material_collect';
 import DailyMaterialDetail from './pages/daily_material_detail';
@@ -32,7 +31,6 @@ function App() {
         {isManager && (
           <>
             <Route path="/" element={<Selection />} />
-            <Route path="/list" element={<ListPDFs />} />
             <Route path="/assign" element={<MaterialAssign />} />
           </>
         )}
