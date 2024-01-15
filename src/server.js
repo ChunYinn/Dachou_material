@@ -15,10 +15,10 @@ const dbConfig = {
 
 // Multer setup for file uploads
 const storage = multer.memoryStorage();
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // Limit of 10MB for file size
-});
+// const upload = multer({
+//   storage: storage,
+//   limits: { fileSize: 10 * 1024 * 1024 } // Limit of 10MB for file size
+// });
 
 app.use(cors());
 app.use(express.json());
@@ -81,7 +81,6 @@ app.get('/get-materials', async (req, res) => {
 app.post('/assign-material', async (req, res) => {
   try {
     // Extracting form data
-    console.log('Assigning material endpoint hit');
     const { production_date, material_id, total_demand, production_sequence, production_machine, batch_number } = req.body;
 
     // Validate the inputs
@@ -94,6 +93,7 @@ app.post('/assign-material', async (req, res) => {
     localDate.setHours(localDate.getHours() + 8); // Taiwan is UTC+8
     const utcDate = localDate.toISOString().split('T')[0]; // Format to YYYY-MM-DD
 
+    console.log(utcDate);
     // Create a new MySQL connection
     const connection = await mysql.createConnection(dbConfig);
 
@@ -173,19 +173,20 @@ app.get('/get-material/:id', async (req, res) => {
   }
 });
 
-
 app.put('/update-material/:id', async (req, res) => {
   const { id } = req.params;
-  const { production_date, material_id, total_demand, production_sequence, production_machine, batch_number } = req.body;
+  const { material_id, total_demand, production_sequence, production_machine, batch_number } = req.body;
 
   try {
     const connection = await mysql.createConnection(dbConfig);
+    
+    // Assuming production_date is not being updated, we exclude it from the update statement
     const sql = `
       UPDATE material_assignments
-      SET production_date = ?, material_id = ?, total_demand = ?, production_sequence = ?, production_machine = ?, batch_number = ?
+      SET material_id = ?, total_demand = ?, production_sequence = ?, production_machine = ?, batch_number = ?
       WHERE material_assign_id = ?
     `;
-    const values = [production_date, material_id, total_demand, production_sequence, production_machine, batch_number, id];
+    const values = [material_id, total_demand, production_sequence, production_machine, batch_number, id];
     await connection.execute(sql, values);
     await connection.end();
 
@@ -320,6 +321,7 @@ app.get('/get-material-detail/:date', async (req, res) => {
       SELECT *
       FROM daily_material_formula
       WHERE batch_number LIKE CONCAT(?, '%')
+      ORDER BY batch_number ASC
     `;
 
     // Execute the query

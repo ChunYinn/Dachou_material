@@ -63,7 +63,14 @@ export default function MaterialAssign() {
 
   const toggleDialog = () => {
     setIsDialogOpen(!isDialogOpen);
+    
+    // Reset states when closing the dialog
+    if (isDialogOpen) {
+      setEditingMaterial(null); // Clear editing material
+      // Reset other states if necessary
+    }
   };
+  
 
   //-----update function------
   const handleEditClick = async (materialId) => {
@@ -241,47 +248,39 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
     return `${year}${monthDay}-${formattedSequence}`;
   };
 
-  // Populate the fields with the data from editingMaterial when editing
   useEffect(() => {
-    if (editingMaterial) {
-      console.log(editingMaterial.production_date);
-      setSelectedDate(editingMaterial.production_date);
-      setGlueId(editingMaterial.material_id);
-      setDemand(editingMaterial.total_demand);
-      setOrder(editingMaterial.production_sequence);
-      setLocation(editingMaterial.production_machine);
-    } else {
-      setSelectedDate(null);
+    if (!editingMaterial) {
+      setSelectedDate(null); // Reset date when adding a new material
       setGlueId('');
       setDemand('');
       setOrder('');
       setLocation('內');
+    } else {
+      // Set states for editing material
+      setGlueId(editingMaterial.material_id);
+      setDemand(editingMaterial.total_demand);
+      setOrder(editingMaterial.production_sequence);
+      setLocation(editingMaterial.production_machine);
     }
   }, [editingMaterial]);
   
 
   const prepareDataAndSubmit = () => {
-    if (!selectedDate || !glueId || !demand || !order || !location) {
-      console.log(selectedDate);
-      alert("Please fill in all fields.");
+    if (!glueId || !demand || !order || !location) {
+      alert("請填寫全部..");
       return;
     }
-    
-    const taiwanDate = selectedDate.add(8, 'hour').format('YYYY-MM-DD');
-
-    // Generate batch number
-    const batchNumber = generateBatchNumber(selectedDate, order);
 
     const assignmentData = {
-      production_date: taiwanDate,
+      production_date: editingMaterial ? editingMaterial.production_date.add(8, 'hour').format('YYYY-MM-DD') : selectedDate.add(8, 'hour').format('YYYY-MM-DD'),
       material_id: glueId,
       total_demand: demand,
       production_sequence: order,
       production_machine: location,
-      batch_number: batchNumber,
+      batch_number: editingMaterial ? editingMaterial.batch_number : generateBatchNumber(selectedDate, order)
     };
 
-    onSubmit(assignmentData); // Call the onSubmit prop function
+    onSubmit(assignmentData);
   };
   
   // Create a custom theme
@@ -303,6 +302,21 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
       // Add other component overrides if needed
     },
   });
+
+  //date formatting
+  function convertToTaiwanDate(dateString) {
+    // Create a new Date object from the input string and add 8 hours for Taiwan time
+    const date = new Date(dateString);
+    date.setHours(date.getHours() + 8);
+  
+    // Format the date in yyyy-mm-dd format
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed
+    const day = date.getDate().toString().padStart(2, '0');
+  
+    return `${year}-${month}-${day}`;
+  }
+  
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -353,6 +367,19 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                       新增領料單
                     </Dialog.Title>
                     <div className="mt-9">
+                      {editingMaterial ? (
+                        <div>
+                          <label className="block mt-3 text-sm font-bold leading-6 text-gray-900">
+                            打料日期
+                          </label>
+                          <input
+                            type="text"
+                            className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
+                            value={convertToTaiwanDate(editingMaterial.production_date)}
+                            readOnly
+                          />
+                        </div>
+                      ) : (
                       <ThemeProvider theme={newTheme}>
                           <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
@@ -363,6 +390,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                             />
                           </LocalizationProvider>
                         </ThemeProvider>
+                        )}
                       <div>
                         <label htmlFor="glue_id" className="block mt-3 text-sm font-bold leading-6 text-gray-900">
                           膠料編號
@@ -372,7 +400,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                             type="text"
                             id="glue_id"
                             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-green-600 sm:text-sm sm:leading-6"
-                            placeholder=""
+                            placeholder="必須一模一樣"
                             value={glueId}
                             onChange={(e) => setGlueId(e.target.value)}
                           />
@@ -398,7 +426,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                             type="text"
                             id="order"
                             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-green-600 sm:text-sm sm:leading-6"
-                            placeholder=""
+                            placeholder="同天不能重複.."
                             value={order}
                             onChange={(e) => setOrder(e.target.value)}
                           />

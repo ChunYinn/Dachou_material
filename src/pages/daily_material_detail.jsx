@@ -7,6 +7,7 @@ export default function DailyMaterialDetail() {
   const [groupedData, setGroupedData] = useState({});
   const [mainGlueCollector, setMainGlueCollector] = useState('');
   const [promoterCollector, setPromoterCollector] = useState('');
+  const [collectorNotes, setCollectorNotes] = useState('');
 
 
   // Assuming the user role is stored in local storage
@@ -39,7 +40,7 @@ export default function DailyMaterialDetail() {
               chemical_raw_material_id: curr.chemical_raw_material_id,
               chemical_raw_material_name: curr.chemical_raw_material_name,
               usage_kg: curr.usage_kg,
-              collecting_status: !!curr.collecting_finished, // Adjust according to your collecting_finished values
+              collecting_status: !!curr.collecting_finished,
               notes: curr.notes || ''
             });
             return acc;
@@ -133,21 +134,43 @@ export default function DailyMaterialDetail() {
     updateCollectingStatus(id, newStatus);
   };
   
-  const updateNotes = async (id, newNotes) => {
+  //--UPDATE 備註-----------------------------------------------
+  const updateNotesInGroupedData = (materialId, newNotes) => {
+    setGroupedData(prevData => {
+      return Object.fromEntries(
+        Object.entries(prevData).map(([batchKey, batchDetails]) => {
+          const updatedMaterials = batchDetails.materials.map(material => {
+            if (material.daily_material_formula_id === materialId) {
+              return { ...material, notes: newNotes };
+            }
+            return material;
+          });
+  
+          return [batchKey, { ...batchDetails, materials: updatedMaterials }];
+        })
+      );
+    });
+  };
+  
+  const handleNotesChange = async (id, newNotes) => {
     try {
       const response = await axios.put(`http://localhost:5000/update-notes/${id}`, {
         notes: newNotes,
       });
       console.log('Update response:', response.data);
-      // Optionally refresh the data or directly update the state to reflect changes
+  
+      // Update the notes in groupedData state
+      updateNotesInGroupedData(id, newNotes);
     } catch (error) {
       console.error('Error updating notes:', error);
     }
   };
 
-  const handleNotesChange = (id, notes) => {
-    updateNotes(id, notes);
+  // Function to handle changes in the notes input
+  const handleNotesInputChange = (materialId, newNotes) => {
+    updateNotesInGroupedData(materialId, newNotes);
   };
+  //------------------------------------------------------------
 
   // Function to handle button click
   const handleButtonClick = (buttonType) => {
@@ -283,11 +306,12 @@ export default function DailyMaterialDetail() {
                               />
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-gray-700">
-                              <input
+                            <input
                                 type="text"
-                                defaultValue={material.notes}
+                                value={material.notes}
+                                onChange={(event) => handleNotesInputChange(material.daily_material_formula_id, event.target.value)}
                                 onBlur={(event) => handleNotesChange(material.daily_material_formula_id, event.target.value)}
-                                className="w-full px-2 py-1 border-b border-indigo-300 focus:outline-none focus:border-indigo-500" // Tailwind CSS styles for underline only
+                                className="w-full px-2 py-1 border-b border-indigo-300 focus:outline-none focus:border-indigo-500"
                                 placeholder="..."
                               />
                             </td>

@@ -109,7 +109,7 @@ export default function MaterialByDate() {
                     <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 px-3 py-3 text-left text-sm font-semibold text-gray-900">
                       促進劑領料狀態
                     </th>
-                    <th className="sticky top-0 z-10 border-b border-gray-200 bg-gray-100 py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-900" >
+                    <th className="sticky w-5 top-0 z-10 border-b border-gray-200 bg-gray-100 py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-900" >
                       
                     </th>
                   </tr>
@@ -140,7 +140,7 @@ export default function MaterialByDate() {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500" style={{ width: '20%' }}>
                           {renderStatusWithIndicator(data.promoter_status)}
                         </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium" style={{ width: '20%' }}>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-center text-sm font-medium" style={{ width: '20%' }}>
                           <button className="text-indigo-600 hover:text-indigo-300 font-bold" onClick={() => viewDetails(data.selected_date)}>
                             查看
                           </button>
