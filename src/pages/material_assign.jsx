@@ -19,7 +19,7 @@ export default function MaterialAssign() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [materials, setMaterials] = useState([]); // State to store the materials
-  // const [editingMaterial, setEditingMaterial] = useState(null);
+  const [editingMaterial, setEditingMaterial] = useState(null);
 
   // Function to fetch materials
   const fetchMaterials = () => {
@@ -42,21 +42,9 @@ export default function MaterialAssign() {
       .then(response => {
         fetchMaterials();
         setIsDialogOpen(false);
-        const materialAssignId = response.data.materialAssignId;
-        calculateAndStoreFormula(materialAssignId, assignmentData);
       })
       .catch(error => {
         console.error("Error submitting data", error);
-      });
-  };
-  
-  const calculateAndStoreFormula = (materialAssignId, assignmentData) => {
-    axios.post('http://localhost:5000/calculate-and-store-formula', { ...assignmentData, materialAssignId })
-      .then(response => {
-        console.log('Formula calculation and storage successful');
-      })
-      .catch(error => {
-        console.error('Error in formula calculation and storage', error);
       });
   };
   
@@ -76,6 +64,31 @@ export default function MaterialAssign() {
   const toggleDialog = () => {
     setIsDialogOpen(!isDialogOpen);
   };
+
+  //-----update function------
+  const handleEditClick = async (materialId) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/get-material/${materialId}`);
+      setEditingMaterial(response.data);
+      console.log(response.data);
+      toggleDialog();
+    } catch (error) {
+      console.error("Error fetching material details", error);
+    }
+  };
+
+  const handleUpdateClick = (assignmentData) => {
+    axios.put(`http://localhost:5000/update-material/${editingMaterial.material_assign_id}`, assignmentData)
+      .then(() => {
+        fetchMaterials();
+        setIsDialogOpen(false);
+        setEditingMaterial(null); // Reset editing material
+      })
+      .catch(error => {
+        console.error("Error updating material", error);
+      });
+  };
+
 
   //--filter function
   // Function to handle filter change for date
@@ -174,7 +187,7 @@ export default function MaterialAssign() {
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.production_sequence}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{material.production_machine}</td>
                           <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
-                            <button className="text-yellow-600 hover:text-yellow-900 font-bold" onClick={() => handleDelete(material.material_assign_id)}>
+                            <button className="text-yellow-600 hover:text-yellow-900 font-bold" onClick={() => handleEditClick(material.material_assign_id)}>
                               編輯
                             </button>
                           </td>
@@ -202,14 +215,19 @@ export default function MaterialAssign() {
       </div>
 
       {isDialogOpen && (
-        <DialogComponent isOpen={isDialogOpen} onClose={toggleDialog} onSubmit={handleAddClick} />
+        <DialogComponent
+          isOpen={isDialogOpen}
+          onClose={toggleDialog}
+          onSubmit={editingMaterial ? handleUpdateClick : handleAddClick}
+          editingMaterial={editingMaterial}
+        />
       )}
     </div>
     
   )
 }
 
-function DialogComponent({ isOpen, onClose, onSubmit }) {
+function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const [glueId, setGlueId] = useState('');
   const [demand, setDemand] = useState('');
@@ -223,11 +241,32 @@ function DialogComponent({ isOpen, onClose, onSubmit }) {
     return `${year}${monthDay}-${formattedSequence}`;
   };
 
+  // Populate the fields with the data from editingMaterial when editing
+  useEffect(() => {
+    if (editingMaterial) {
+      console.log(editingMaterial.production_date);
+      setSelectedDate(editingMaterial.production_date);
+      setGlueId(editingMaterial.material_id);
+      setDemand(editingMaterial.total_demand);
+      setOrder(editingMaterial.production_sequence);
+      setLocation(editingMaterial.production_machine);
+    } else {
+      setSelectedDate(null);
+      setGlueId('');
+      setDemand('');
+      setOrder('');
+      setLocation('內');
+    }
+  }, [editingMaterial]);
+  
+
   const prepareDataAndSubmit = () => {
     if (!selectedDate || !glueId || !demand || !order || !location) {
+      console.log(selectedDate);
       alert("Please fill in all fields.");
       return;
     }
+    
     const taiwanDate = selectedDate.add(8, 'hour').format('YYYY-MM-DD');
 
     // Generate batch number
@@ -390,7 +429,7 @@ function DialogComponent({ isOpen, onClose, onSubmit }) {
                     className="inline-flex w-full justify-center rounded-md bg-green-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
                     onClick={prepareDataAndSubmit}
                   >
-                    新增
+                    {editingMaterial ? '更改' : '新增'}
                   </button>
                 </div>
               </Dialog.Panel>
