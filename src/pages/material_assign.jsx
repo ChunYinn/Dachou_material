@@ -272,7 +272,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
     }
 
     const assignmentData = {
-      production_date: editingMaterial ? editingMaterial.production_date.add(8, 'hour').format('YYYY-MM-DD') : selectedDate.add(8, 'hour').format('YYYY-MM-DD'),
+      production_date: editingMaterial ? editingMaterial.production_date : selectedDate.add(8, 'hour').format('YYYY-MM-DD'),
       material_id: glueId,
       total_demand: demand,
       production_sequence: order,
