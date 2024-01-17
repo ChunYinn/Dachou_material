@@ -6,6 +6,7 @@ import NavBar from "./common/nav";
 import MaterialAssign from './pages/material_assign';
 import MaterialByDate from './pages/daily_material_collect';
 import DailyMaterialDetail from './pages/daily_material_detail';
+import MaterialSearchAdd from './pages/material_search_add';
 
 function App() {
   const location = useLocation();
@@ -32,6 +33,7 @@ function App() {
           <>
             <Route path="/" element={<Selection />} />
             <Route path="/assign" element={<MaterialAssign />} />
+            <Route path="/material-search" element={<MaterialSearchAdd />} />
           </>
         )}
 

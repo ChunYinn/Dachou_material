@@ -119,7 +119,7 @@ export default function MaterialAssign() {
   return (
     
     <div className="flex justify-center items-center mt-14">
-        <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
             <h1 className="text-4xl font-semibold leading-6 text-gray-900">領化工原料登記</h1>
