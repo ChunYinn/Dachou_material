@@ -7,6 +7,7 @@ import MaterialAssign from './pages/material_assign';
 import MaterialByDate from './pages/daily_material_collect';
 import DailyMaterialDetail from './pages/daily_material_detail';
 import MaterialSearchAdd from './pages/material_search_add';
+import InventorySearch from './pages/inventory_search';
 
 function App() {
   const location = useLocation();
@@ -17,9 +18,9 @@ function App() {
   const isManager = userRole === 'manager';
 
   // Redirect to login if not logged in
-  if (!isLoggedIn && location.pathname !== '/login') {
-    return <Navigate to="/login" replace />;
-  }
+  // if (!isLoggedIn && location.pathname !== '/login') {
+  //   return <Navigate to="/login" replace />;
+  // }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -45,6 +46,7 @@ function App() {
         <Route path="/daily-collect" element={<MaterialByDate />} />    
         {/* <Route path="/employee" element={<EmployeeList />} /> */}
         <Route path="/details/:date" element={<DailyMaterialDetail />} />
+        <Route path='/inventory-search' element={<InventorySearch />} />
 
         {/* Redirect non-manager users trying to access manager-only routes */}
         {!isManager && isLoggedIn && (

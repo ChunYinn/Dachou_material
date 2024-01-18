@@ -12,7 +12,7 @@ const inventory = [
     return (
       <div className="flex justify-center items-center mt-14">
   
-        <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="sm:flex sm:items-center">
               <div className="sm:flex-auto">
                 <h1 className="text-4xl mb-4 font-semibold leading-6 text-gray-900">化工原料庫存管理</h1>
@@ -67,47 +67,35 @@ const inventory = [
               </div>
             </div>
   
-            <div className="flex flex-wrap mt-10">
-              
-            <div className="flex flex-col" style={{ width: "27%"}}>
-              {/* left table showing material basic info -------------------*/}
-              <div className="flex flex-col p-5 bg-white rounded-lg shadow-lg ring-1 ring-gray-300" style={{height: "320px" }}>
+            <div className="flex flex-col mt-10">            
+                {/* top table showing material basic info -------------------*/}
+                <div className="flex p-5 bg-white rounded-lg shadow-lg ring-1 ring-gray-300">
                 {labels.map((label, index) => (
-                  <div className="flex items-center mt-2" key={label}>
-                    <div className="w-32">
-                      <label className="text-sm font-bold leading-6 text-gray-900">
-                        {label}
-                      </label>
-                    </div>
-                    <textarea
-                      name={label}
-                      id={label}
-                      value={data[index]}
-                      className="flex-grow rounded-md border-gray-300 py-1.5 text-gray-900 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                      readOnly
-                      rows={1} // Adjust number of rows as needed
-                      style={{ resize: 'none', width:"80%"}} // Prevents resizing
-                    />
-                  </div>
+                    <div className="flex items-center" key={label} >
+                        <div className="">
+                            <label className="text-sm font-bold leading-6 text-gray-900">
+                            {label}
+                            </label>
+                        </div>
+                        <textarea
+                            name={label}    
+                            id={label}
+                            value={data[index]}
+                            className="flex-grow rounded-md border-gray-300 py-1.5 text-gray-900 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                            readOnly
+                            rows={1} // Adjust number of rows as needed
+                            style={{ resize: 'none'}} // Prevents resizing
+                        />
+                        </div>
                 ))}
-              </div>
-  
-              {/* left table below showing kg -------------------*/}
-              <div className="mt-4 p-5 bg-white rounded-lg shadow-lg ring-1 ring-gray-300 flex flex-col justify-center text-center" style={{height: "100px" }}>
-                <div className="flex gap-4 text-center justify-center">
-                  123123
                 </div>
-              </div>
-            </div>
-        
-  
-              
+
               {/* formula table ----------------------------------------------*/}
-              <div className="pl-4 sm:pl-6 lg:pl-8" style={{width:"73%"}}>  
+              <div className=" mt-10 px-4 sm:px-6 lg:px-8">  
                 <div className="flow-root">
                   <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                     <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                      <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg" style={{ height: '65vh', overflowY: 'auto' }}>
+                      <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg" style={{ maxHeight: '40vh', overflowY: 'auto' }}>
                         <table className="min-w-full divide-y divide-gray-300">
                           <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>
