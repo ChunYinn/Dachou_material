@@ -48,7 +48,7 @@ export default function Selection() {
           className="rounded-md bg-gray-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 w-64 h-32"
           onClick={navigateMaterialSearch}
         >
-          Material Search
+          膠料基本檔
         </button>
 
         <button
@@ -56,7 +56,7 @@ export default function Selection() {
           className="rounded-md bg-gray-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 w-64 h-32"
           onClick={navigateInventorySearch}
         >
-          Inventory Search
+          化工原料庫存管理
         </button>
       </div>
     </div>
