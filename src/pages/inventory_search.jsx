@@ -1,6 +1,9 @@
 const inventory = [
     { date: '2024/01/01', id: 'DA0124010', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
     { date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
+    {date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
+    {date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
+    {date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
   ]
   
   const labels = ["化工原料ID","化工原料名稱","目前庫存","功能","單價","庫存價值"];
@@ -68,27 +71,25 @@ const inventory = [
             </div>
   
             <div className="flex flex-col mt-10">            
-                {/* top table showing material basic info -------------------*/}
-                <div className="flex p-5 bg-white rounded-lg shadow-lg ring-1 ring-gray-300">
-                {labels.map((label, index) => (
-                    <div className="flex items-center" key={label} >
-                        <div className="">
-                            <label className="text-sm font-bold leading-6 text-gray-900">
-                            {label}
-                            </label>
-                        </div>
-                        <textarea
-                            name={label}    
-                            id={label}
-                            value={data[index]}
-                            className="flex-grow rounded-md border-gray-300 py-1.5 text-gray-900 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                            readOnly
-                            rows={1} // Adjust number of rows as needed
-                            style={{ resize: 'none'}} // Prevents resizing
-                        />
-                        </div>
-                ))}
+              {/* Top table showing material basic info ------------------- */}
+              <div className="mt-5 px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-wrap p-5 bg-white rounded-lg shadow-lg ring-1 ring-gray-300">
+                  {labels.map((label, index) => (
+                    <div className="flex items-center mb-4 md:mb-0 md:w-1/3" key={label}>
+                      <div className="mr-4">
+                        <label className="text-sm font-bold leading-6 text-gray-900">
+                          {label}:
+                        </label>
+                      </div>
+                      <div className="flex-grow">
+                        <p className="text-sm text-gray-700">
+                          {data[index]}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              </div>
 
               {/* formula table ----------------------------------------------*/}
               <div className=" mt-10 px-4 sm:px-6 lg:px-8">  
