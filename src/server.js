@@ -442,6 +442,79 @@ app.put('/update-notes/:id', async (req, res) => {
   }
 });
 
+//-------------膠料基本黨-----------------------------------------------
+// get rubber rile ms.stickness_value,
+app.get('/get-material-info/:materialID', async (req, res) => {
+  const { materialID } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    
+    const sql = `
+      SELECT 
+        rf.material_id, 
+        mp.property_name, 
+        rf.hardness, 
+        mc.color_name, 
+        mu.usage_type, 
+        rf.customer_usage, 
+        rf.main_ingredient
+      FROM rubber_file rf
+      LEFT JOIN material_properties mp ON rf.property_id = mp.property_id
+      LEFT JOIN material_stickness ms ON rf.stickness = ms.stickness_id
+      LEFT JOIN material_usage mu ON rf.usage_id = mu.usage_id
+      LEFT JOIN material_colors mc ON rf.color_id = mc.color_id
+      WHERE rf.material_id = ?
+    `;
+    
+    const [rows] = await connection.execute(sql, [materialID]);
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      res.status(404).send('Material not found');
+    }
+  } catch (error) {
+    console.error('Error fetching material info:', error.message);
+    res.status(500).send('Error fetching material info');
+  }
+});
+
+// New backend route to get MATERIAL DATA TABLE
+app.get('/get-material-table-data/:materialID', async (req, res) => {
+  const { materialID } = req.params;
+   
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    const sql = `
+      SELECT 
+        DATE_FORMAT(CONVERT_TZ(creation_date, '+00:00', '+08:00'), '%Y-%m-%d') as creation_date,
+        material_id, 
+        chemical_raw_material_id,
+        usage_kg,
+        material_function,
+        sequence,
+        unit_price
+      FROM join_formula
+      WHERE material_id = ?
+    `;
+
+    const [rows] = await connection.execute(sql, [materialID]);
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.json(rows);
+    } else {
+      res.status(404).send('No data found for the given material ID');
+    }
+  } catch (error) {
+    console.error('Error fetching specific material info:', error.message);
+    res.status(500).send('Error fetching specific material info');
+  }
+});
+
 
 
 
