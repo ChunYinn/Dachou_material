@@ -21,6 +21,23 @@ export default function InventorySearch() {
   const [selectedInventory, setSelectedInventory] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
 
+  const transformDataForTable = () => {
+    if (searchResults.chemicalStocksAndInfo && searchResults.chemicalStocksAndInfo.length > 0) {
+      const info = searchResults.chemicalStocksAndInfo[0];
+      return [
+        info.chemical_raw_material_id,
+        info.chemical_raw_material_name,
+        info.chemical_raw_material_current_stock,
+        info.material_function,
+        info.unit_price,
+        info.safty_stock_value,
+      ];
+    }
+    return [];
+  };
+
+  const tableData = transformDataForTable();
+
   // State for input fields
   const [inputFields, setInputFields] = useState({
     chemicalId: '',
@@ -174,7 +191,7 @@ export default function InventorySearch() {
                     </div>
                     <div className="flex-grow">
                       <p className="text-sm text-gray-700">
-                        {data[index]}
+                        {tableData[index] || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -224,7 +241,36 @@ export default function InventorySearch() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
-                          {inventory.map((inventry, index) => (
+                          {searchResults.chemicalIndividualInput && searchResults.chemicalIndividualInput.length > 0 ? (
+                            searchResults.chemicalIndividualInput.map((input, index) => (
+                              <tr key={index}>
+                                <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                                  {input.formatted_input_date} {/* Format this date as needed */}
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.chemical_raw_material_batch_no}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.chemical_raw_material_input_kg}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.chemical_raw_material_position}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.chemical_raw_material_supplier}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.input_test_hardness}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.test_employee}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.quality_check}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.supplier_material_batch_no}</td>
+                                <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                  <button
+                                    onClick={() => openPopover()}
+                                    className="text-indigo-600 hover:text-indigo-900 hover:underline"
+                                  >
+                                    出庫紀錄
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan="9" className="text-center py-4 text-sm text-gray-500">No data found</td>
+                            </tr>
+                          )}
+                          {/* {inventory.map((inventry, index) => (
                             <tr key={index}>
                               <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                 {inventry.date}
@@ -247,7 +293,7 @@ export default function InventorySearch() {
                                 </button>
                               </td>
                             </tr>
-                          ))}
+                          ))} */}
 
 
                           

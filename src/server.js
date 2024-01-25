@@ -543,7 +543,23 @@ app.get('/search-materials-by-id', async (req, res) => {
 
     let results2 = [];
     if (chemicalId) {
-      const sql2 = `SELECT * FROM chemical_individual_input WHERE chemical_raw_material_id = ?`;
+      const sql2 = `SELECT 
+      chemical_raw_material_batch_no,
+      DATE_FORMAT(CONVERT_TZ(input_date, '+00:00', '+08:00'), '%Y-%m-%d') as formatted_input_date,
+      chemical_raw_material_id,
+      supplier_material_batch_no,
+      chemical_raw_material_input_kg,
+      chemical_raw_material_position,
+      chemical_raw_material_supplier,
+      test_employee,
+      input_test_hardness,
+      quality_check,
+      batch_kg
+    FROM 
+      chemical_individual_input 
+    WHERE 
+      chemical_raw_material_id = ?
+    `;
       [results2] = await connection.execute(sql2, [chemicalId]);
     }
 
