@@ -514,8 +514,51 @@ app.get('/get-material-table-data/:materialID', async (req, res) => {
     res.status(500).send('Error fetching specific material info');
   }
 });
+//-----------------inventory search-----------------------------------------------
+app.get('/search-materials-by-id', async (req, res) => {
+  try {
+    const { chemicalId } = req.query;
 
+    const connection = await mysql.createConnection(dbConfig);
 
+    let sql1 = `
+      SELECT 
+        cs.chemical_raw_material_id, 
+        rmf.chemical_raw_material_name, 
+        cs.chemical_raw_material_current_stock,
+        rmf.material_function,
+        rmf.unit_price,
+        cs.safty_stock_value
+      FROM 
+        chemical_stocks cs
+      INNER JOIN 
+        rubber_raw_material_file rmf ON cs.chemical_raw_material_id = rmf.chemical_raw_material_id
+    `;
+    
+    if (chemicalId) {
+      sql1 += ' WHERE cs.chemical_raw_material_id = ?';
+    }
+
+    const [results1] = await connection.execute(sql1, chemicalId ? [chemicalId] : []);
+
+    let results2 = [];
+    if (chemicalId) {
+      const sql2 = `SELECT * FROM chemical_individual_input WHERE chemical_raw_material_id = ?`;
+      [results2] = await connection.execute(sql2, [chemicalId]);
+    }
+
+    await connection.end();
+
+    res.json({ 
+      chemicalStocksAndInfo: results1,
+      chemicalIndividualInput: results2
+    });
+
+  } catch (error) {
+    console.error('Error searching materials:', error.message);
+    res.status(500).send('Error searching materials');
+  }
+});
 
 
 const server = app.listen(port, () => {

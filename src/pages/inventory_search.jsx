@@ -1,5 +1,6 @@
 import { useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
+import axios from 'axios';
 
 const inventory = [
     { date: '2024/01/01', id: 'DA0124010', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
@@ -9,7 +10,7 @@ const inventory = [
     {date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
   ]
   
-const labels = ["化工原料ID","化工原料名稱","目前庫存","功能","單價","庫存價值"];
+const labels = ["化工原料ID","化工原料名稱","目前庫存","功能","單價","安全庫存量"];
 const data = ["HB-F0-01-02-D", " TPE", " 60", " 黑", "123", " 通用"];
 
 
@@ -18,6 +19,65 @@ const data = ["HB-F0-01-02-D", " TPE", " 60", " 黑", "123", " 通用"];
 export default function InventorySearch() {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
+
+  // State for input fields
+  const [inputFields, setInputFields] = useState({
+    chemicalId: '',
+    chemicalName: '',
+    batchNumber: '',
+  });
+
+  const fetchMaterials = async (field, value) => {
+    if (!value) return; // Do not fetch if the value is empty
+  
+    let endpoint;
+    switch (field) {
+      case 'chemicalId':
+        endpoint = '/search-materials-by-id';
+        break;
+      case 'chemicalName':
+        endpoint = '/search-materials-by-name'; // Replace with your actual endpoint
+        break;
+      case 'batchNumber':
+        endpoint = '/search-materials-by-batch'; // Replace with your actual endpoint
+        break;
+      default:
+        return;
+    }
+  
+    try {
+      const response = await axios.get(`http://localhost:5000${endpoint}`, {
+        params: { [field]: value }
+      });
+      setSearchResults(response.data);
+      console.log(response.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // Handle error appropriately
+    }
+  };
+  
+  const handleInputChange = (field, value) => {
+    // Clear other fields and set the current field
+    setInputFields({
+      chemicalId: '',
+      chemicalName: '',
+      batchNumber: '',
+      [field]: value,
+    });
+  };
+
+  const handleSearch = () => {
+    if (inputFields.chemicalId) {
+      fetchMaterials('chemicalId', inputFields.chemicalId);
+    } else if (inputFields.chemicalName) {
+      fetchMaterials('chemicalName', inputFields.chemicalName);
+    } else if (inputFields.batchNumber) {
+      fetchMaterials('batchNumber', inputFields.batchNumber);
+    }
+  };
+
 
   const openPopover = (inventoryItem) => {
     setSelectedInventory(inventoryItem);
@@ -38,51 +98,66 @@ export default function InventorySearch() {
             </div>
             <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex space-x-4">
         
-              <div className="relative">
-                <label
+            <div className="relative">
+              <label
                   htmlFor="name"
                   className="absolute -top-2 left-2 inline-block bg-white px-1 text-xs font-semibold text-indigo-700"
                 >
                   化工原料ID
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  placeholder="DH10"
-                />
-              </div>
-              <div className="relative">
-                <label
+              <input
+                type="text"
+                name="chemicalId"
+                id="chemicalId"
+                value={inputFields.chemicalId}
+                onChange={(e) => handleInputChange('chemicalId', e.target.value)}
+                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                placeholder="DH10"
+              />
+            </div>
+            {/* Chemical Name Input */}
+            <div className="relative">
+              <label
                   htmlFor="name"
                   className="absolute -top-2 left-2 inline-block bg-white px-1 text-xs font-semibold text-indigo-700"
                 >
                   化工名稱
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  placeholder="AN-300"
-                />
-              </div>
-              <div className="relative">
-                <label
+              <input
+                type="text"
+                name="chemicalName"
+                id="chemicalName"
+                value={inputFields.chemicalName}
+                onChange={(e) => handleInputChange('chemicalName', e.target.value)}
+                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                placeholder="AN-300"
+              />
+            </div>
+            {/* Batch Number Input */}
+            <div className="relative">
+              <label
                   htmlFor="name"
                   className="absolute -top-2 left-2 inline-block bg-white px-1 text-xs font-semibold text-indigo-700"
                 >
                   批號
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  placeholder="AN123123"
-                />
-              </div>
+              <input
+                type="text"
+                name="batchNumber"
+                id="batchNumber"
+                value={inputFields.batchNumber}
+                onChange={(e) => handleInputChange('batchNumber', e.target.value)}
+                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                placeholder="AN123123"
+              />
+            </div>
+              <button
+                type="button"
+                onClick={handleSearch}
+                className="block w-16 rounded-md bg-indigo-700 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-700"
+              >
+                搜尋
+              </button>
             </div>
           </div>
 
