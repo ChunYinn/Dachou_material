@@ -700,6 +700,36 @@ app.get('/search-materials-by-batch', async (req, res) => {
     res.status(500).send('Error searching materials by batch number');
   }
 });
+//-------------化工原料庫存總表-----------------------------------------------
+//get list of all chemicals and current stocks
+app.get('/get-chemicals', async (req, res) => {
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `
+    SELECT 
+    cs.chemical_raw_material_id,
+    rmf.chemical_raw_material_name,
+    cs.chemical_raw_material_current_stock,
+    cs.safty_stock_value,
+    cs.ok_kg,
+    cs.ng_kg,
+    cs.need_restock
+    FROM 
+        chemical_stocks cs
+    JOIN 
+        rubber_raw_material_file rmf
+    ON 
+        cs.chemical_raw_material_id = rmf.chemical_raw_material_id;
+    `;
+
+    const [chemicals] = await connection.execute(sql);
+    await connection.end();
+    res.json(chemicals);
+  } catch (error) {
+    console.error('Error fetching chemicals:', error.message);
+    res.status(500).send('Error fetching chemicals');
+  }
+});
 
 
 

@@ -8,6 +8,7 @@ import MaterialByDate from './pages/daily_material_collect';
 import DailyMaterialDetail from './pages/daily_material_detail';
 import MaterialSearchAdd from './pages/material_search_add';
 import InventorySearch from './pages/inventory_search';
+import ChemicalList from './pages/chemical_list'
 
 function App() {
   const location = useLocation();
@@ -35,7 +36,8 @@ function App() {
             <Route path="/" element={<Selection />} />
             <Route path="/assign" element={<MaterialAssign />} />
             <Route path="/material-search" element={<MaterialSearchAdd />} />
-            {/* <Route path='/inventory-search' element={<InventorySearch />} /> */}
+            <Route path='/inventory-search' element={<InventorySearch />} />
+            <Route path='/chemical_list' element={<ChemicalList />} />
           </>
         )}
 
@@ -46,7 +48,6 @@ function App() {
 
         <Route path="/daily-collect" element={<MaterialByDate />} />    
         <Route path="/details/:date" element={<DailyMaterialDetail />} />
-        <Route path='/inventory-search' element={<InventorySearch />} />
         {/* Redirect non-manager users trying to access manager-only routes */}
         {!isManager && isLoggedIn && (
           <Route path="*" element={<Navigate to="/daily-collect" replace />} />
