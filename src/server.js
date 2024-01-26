@@ -576,6 +576,132 @@ app.get('/search-materials-by-id', async (req, res) => {
   }
 });
 
+//get by name 
+app.get('/search-materials-by-name', async (req, res) => {
+  try {
+    const { chemicalName } = req.query;
+    const connection = await mysql.createConnection(dbConfig);
+
+    let sql1 = `
+      SELECT 
+        cs.chemical_raw_material_id, 
+        rmf.chemical_raw_material_name, 
+        cs.chemical_raw_material_current_stock,
+        rmf.material_function,
+        rmf.unit_price,
+        cs.safty_stock_value
+      FROM 
+        chemical_stocks cs
+      INNER JOIN 
+        rubber_raw_material_file rmf ON cs.chemical_raw_material_id = rmf.chemical_raw_material_id
+    `;
+
+    if (chemicalName) {
+      sql1 += ' WHERE rmf.chemical_raw_material_name LIKE ?';
+    }
+
+    const [results1] = await connection.execute(sql1, chemicalName ? [`%${chemicalName}%`] : []);
+
+    let results2 = [];
+    if (chemicalName) {
+      const sql2 = `SELECT 
+        chemical_raw_material_batch_no,
+        DATE_FORMAT(CONVERT_TZ(input_date, '+00:00', '+08:00'), '%Y-%m-%d') as formatted_input_date,
+        chemical_raw_material_id,
+        supplier_material_batch_no,
+        chemical_raw_material_input_kg,
+        chemical_raw_material_position,
+        chemical_raw_material_supplier,
+        test_employee,
+        input_test_hardness,
+        quality_check,
+        batch_kg
+      FROM 
+        chemical_individual_input 
+      WHERE 
+        chemical_raw_material_id IN (SELECT chemical_raw_material_id FROM rubber_raw_material_file WHERE chemical_raw_material_name LIKE ?)
+      `;
+      [results2] = await connection.execute(sql2, [`%${chemicalName}%`]);
+    }
+
+    await connection.end();
+
+    res.json({ 
+      chemicalStocksAndInfo: results1,
+      chemicalIndividualInput: results2
+    });
+
+  } catch (error) {
+    console.error('Error searching materials by name:', error.message);
+    res.status(500).send('Error searching materials by name');
+  }
+});
+
+//GET BY Chemical batch number 
+app.get('/search-materials-by-batch', async (req, res) => {
+  try {
+    const { batchNumber } = req.query;
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Query for individual batch information
+    const sql1 = `
+      SELECT 
+        cii.chemical_raw_material_batch_no,
+        DATE_FORMAT(CONVERT_TZ(cii.input_date, '+00:00', '+08:00'), '%Y-%m-%d') as formatted_input_date,
+        cii.chemical_raw_material_id,
+        cii.supplier_material_batch_no,
+        cii.chemical_raw_material_input_kg,
+        cii.chemical_raw_material_position,
+        cii.chemical_raw_material_supplier,
+        cii.test_employee,
+        cii.input_test_hardness,
+        cii.quality_check,
+        cii.batch_kg
+      FROM 
+        chemical_individual_input cii
+      WHERE 
+        cii.chemical_raw_material_batch_no = ?
+    `;
+
+    const [results1] = await connection.execute(sql1, [batchNumber]);
+
+    // Query for stock and general information if any batch is found
+    let results2 = [];
+    if (results1.length > 0) {
+      const chemicalId = results1[0].chemical_raw_material_id; // Assuming all batches have same chemical ID
+      const sql2 = `
+        SELECT 
+          cs.chemical_raw_material_id, 
+          rmf.chemical_raw_material_name, 
+          cs.chemical_raw_material_current_stock,
+          rmf.material_function,
+          rmf.unit_price,
+          cs.safty_stock_value
+        FROM 
+          chemical_stocks cs
+        INNER JOIN 
+          rubber_raw_material_file rmf ON cs.chemical_raw_material_id = rmf.chemical_raw_material_id
+        WHERE 
+          cs.chemical_raw_material_id = ?
+      `;
+
+      [results2] = await connection.execute(sql2, [chemicalId]);
+    }
+
+    await connection.end();
+
+    res.json({ 
+      chemicalStocksAndInfo: results2,
+      chemicalIndividualInput: results1
+    });
+
+  } catch (error) {
+    console.error('Error searching materials by batch number:', error.message);
+    res.status(500).send('Error searching materials by batch number');
+  }
+});
+
+
 
 const server = app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

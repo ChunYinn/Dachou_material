@@ -54,10 +54,10 @@ export default function InventorySearch() {
         endpoint = '/search-materials-by-id';
         break;
       case 'chemicalName':
-        endpoint = '/search-materials-by-name'; // Replace with your actual endpoint
+        endpoint = '/search-materials-by-name';
         break;
       case 'batchNumber':
-        endpoint = '/search-materials-by-batch'; // Replace with your actual endpoint
+        endpoint = '/search-materials-by-batch'; 
         break;
       default:
         return;
@@ -267,34 +267,9 @@ export default function InventorySearch() {
                             ))
                           ) : (
                             <tr>
-                              <td colSpan="9" className="text-center py-4 text-sm text-gray-500">No data found</td>
+                              <td colSpan="9" className="text-center py-4 text-sm text-gray-500">無資料</td>
                             </tr>
                           )}
-                          {/* {inventory.map((inventry, index) => (
-                            <tr key={index}>
-                              <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                {inventry.date}
-                              </td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{inventry.id}</td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{inventry.kg}</td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{inventry.pos}</td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{inventry.company}</td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{inventry.hardness}</td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{inventry.ppl}</td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{inventry.pass}</td>
-                              <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{inventry.company_id}</td>
-
-                              <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                <button
-                                  onClick={() => openPopover(inventry)}
-                                  className="text-indigo-600 hover:text-indigo-900 hover:underline"
-                                >
-                                  出庫紀錄
-                                </button>
-                              </td>
-                            </tr>
-                          ))} */}
-
 
                           
                       {/* Popover Dialog --------------------------------------------------------------------*/}
