@@ -701,6 +701,34 @@ app.get('/search-materials-by-batch', async (req, res) => {
   }
 });
 
+//get export information for each row
+// Endpoint to get export history by batch number
+app.get('/get-export-history/:batchNumber', async (req, res) => {
+  try {
+    const { batchNumber } = req.params;
+    const connection = await mysql.createConnection(dbConfig);
+
+    const sql = `
+      SELECT 
+        chemical_raw_material_batch_no,
+        DATE_FORMAT(CONVERT_TZ(collect_date, '+00:00', '+08:00'), '%Y-%m-%d') as formatted_collect_date,
+        chemical_raw_material_output_kg
+      FROM 
+        chemical_individual_output
+      WHERE 
+        chemical_raw_material_batch_no = ?
+    `;
+
+    const [results] = await connection.execute(sql, [batchNumber]);
+    await connection.end();
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error getting export history:', error.message);
+    res.status(500).send('Error getting export history');
+  }
+});
+
 
 
 const server = app.listen(port, () => {

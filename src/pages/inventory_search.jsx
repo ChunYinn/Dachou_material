@@ -1,25 +1,14 @@
-import { useState, Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import { useState } from 'react';
 import axios from 'axios';
-
-const inventory = [
-    { date: '2024/01/01', id: 'DA0124010', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
-    { date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
-    {date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
-    {date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
-    {date: '2024/01/01', id: 'DA012401171', kg: '10', pos: 'A',company:'長弘',hardness:'70',ppl:'峻印', pass:'NO',company_id:'IISu32839534' },
-  ]
   
 const labels = ["化工原料ID","化工原料名稱","目前庫存","功能","單價","安全庫存量"];
-const data = ["HB-F0-01-02-D", " TPE", " 60", " 黑", "123", " 通用"];
-
 
 //-------------------------------------------------------------------------------------------------------------------------------------
 
 export default function InventorySearch() {
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [selectedInventory, setSelectedInventory] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
+  const [exportHistory, setExportHistory] = useState([]);
+  const [selectedRowIndex, setSelectedRowIndex] = useState(null);
 
   const transformDataForTable = () => {
     if (searchResults.chemicalStocksAndInfo && searchResults.chemicalStocksAndInfo.length > 0) {
@@ -95,15 +84,16 @@ export default function InventorySearch() {
     }
   };
 
-
-  const openPopover = (inventoryItem) => {
-    setSelectedInventory(inventoryItem);
-    setIsPopoverOpen(true);
+  const handleRowClick = async (batchNo, index) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/get-export-history/${batchNo}`);
+      setExportHistory(response.data); // Update the export history state
+      setSelectedRowIndex(index); // Update the selected row index state
+    } catch (error) {
+      console.error('Error fetching export history:', error);
+    }
   };
-
-  const closePopover = () => {
-    setIsPopoverOpen(false);
-  };
+  
 
   return (
     <div className="flex justify-center items-center mt-14">
@@ -200,8 +190,9 @@ export default function InventorySearch() {
             </div>
 
             {/* formula table ----------------------------------------------*/}
-            <div className=" mt-10 px-4 sm:px-6 lg:px-8">  
-              <div className="flow-root">
+            <div className="mt-12 flex">  
+              <div className="flex-grow">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">入庫記錄</h2>
                 <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                   <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
                     <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg" style={{ maxHeight: '40vh', overflowY: 'auto' }}>
@@ -243,7 +234,10 @@ export default function InventorySearch() {
                         <tbody className="divide-y divide-gray-200 bg-white">
                           {searchResults.chemicalIndividualInput && searchResults.chemicalIndividualInput.length > 0 ? (
                             searchResults.chemicalIndividualInput.map((input, index) => (
-                              <tr key={index}>
+                              <tr 
+                                key={index}
+                                className={index === selectedRowIndex ? "bg-yellow-100" : ""}
+                              >
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                   {input.formatted_input_date} {/* Format this date as needed */}
                                 </td>
@@ -257,7 +251,7 @@ export default function InventorySearch() {
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.supplier_material_batch_no}</td>
                                 <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                   <button
-                                    onClick={() => openPopover()}
+                                    onClick={() => handleRowClick(input.chemical_raw_material_batch_no, index)}
                                     className="text-indigo-600 hover:text-indigo-900 hover:underline"
                                   >
                                     出庫紀錄
@@ -270,72 +264,45 @@ export default function InventorySearch() {
                               <td colSpan="9" className="text-center py-4 text-sm text-gray-500">無資料</td>
                             </tr>
                           )}
-
-                          
-                      {/* Popover Dialog --------------------------------------------------------------------*/}
-                      <Transition.Root show={isPopoverOpen} as={Fragment}>
-                            <Dialog as="div" className="relative z-10" onClose={closePopover}>
-                              <Transition.Child
-                                as={Fragment}
-                                enter="ease-out duration-300"
-                                enterFrom="opacity-0"
-                                enterTo="opacity-100"
-                                leave="ease-in duration-200"
-                                leaveFrom="opacity-100"
-                                leaveTo="opacity-0"
-                              >
-                                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-                              </Transition.Child>
-
-                              <div className="fixed z-10 inset-0 overflow-y-auto">
-                                <div className="flex items-end sm:items-center justify-center min-h-full p-4 text-center sm:p-0">
-                                  <Transition.Child
-                                    as={Fragment}
-                                    enter="ease-out duration-300"
-                                    enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                                    enterTo="opacity-100 translate-y-0 sm:scale-100"
-                                    leave="ease-in duration-200"
-                                    leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                                    leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                                  >
-                                    <Dialog.Panel className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full">
-                                      <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                        <div className="sm:flex sm:items-start">
-                                          <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                            <Dialog.Title as="h3" className="text-lg leading-6 font-medium text-gray-900">
-                                              主膠出庫
-                                            </Dialog.Title>
-                                            <div className="mt-2">
-                                              <p className="text-sm text-gray-500">
-                                                出庫日期：{selectedInventory?.date}
-                                              </p>
-                                              <p className="text-sm text-gray-500">
-                                                出庫公斤：{selectedInventory?.kg}
-                                              </p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                      <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                        <button
-                                          type="button"
-                                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                                          onClick={() => closePopover()}
-                                        >
-                                          關閉
-                                        </button>
-                                      </div>
-                                    </Dialog.Panel>
-                                  </Transition.Child>
-                                </div>
-                              </div>
-                            </Dialog>
-                          </Transition.Root>
-                            {/* ------------------------------------------------------------------------------------ */}
                         </tbody>
-                      </table>
+                      </table>                     
                     </div>
                   </div>
+                </div>
+              </div>
+              
+              {/* ------------------------------------------------------------------------------------ */}
+              <div className="flex-grow-0 w-1/5 ml-4">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">出庫記錄</h2>
+                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg" style={{ maxHeight: '40vh', overflowY: 'auto' }}>
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
+                          出庫日期
+                        </th>
+                        <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-left text-sm font-semibold text-gray-900">
+                          公斤
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {exportHistory.length > 0 ? (
+                        exportHistory.map((entry, index) => (
+                          <tr key={index}>
+                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                              {entry.formatted_collect_date}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{entry.chemical_raw_material_output_kg}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="9" className="text-center py-4 text-sm text-gray-500">無資料</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
