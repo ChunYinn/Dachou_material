@@ -743,7 +743,8 @@ app.get('/get-export-history/:batchNumber', async (req, res) => {
       SELECT 
         chemical_raw_material_batch_no,
         DATE_FORMAT(CONVERT_TZ(collect_date, '+00:00', '+08:00'), '%Y-%m-%d') as formatted_collect_date,
-        chemical_raw_material_output_kg
+        chemical_raw_material_output_kg,
+        output_usage
       FROM 
         chemical_individual_output
       WHERE 

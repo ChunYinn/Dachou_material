@@ -75,6 +75,8 @@ export default function InventorySearch() {
   };
 
   const handleSearch = () => {
+    setExportHistory([]);
+    
     if (inputFields.chemicalId) {
       fetchMaterials('chemicalId', inputFields.chemicalId);
     } else if (inputFields.chemicalName) {
@@ -272,7 +274,7 @@ export default function InventorySearch() {
               </div>
               
               {/* ------------------------------------------------------------------------------------ */}
-              <div className="flex-grow-0 w-1/5 ml-4">
+              <div className="flex-grow-0 w-1/8 ml-4">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">出庫記錄</h2>
                 <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg" style={{ maxHeight: '40vh', overflowY: 'auto' }}>
                   <table className="min-w-full divide-y divide-gray-300">
@@ -284,6 +286,9 @@ export default function InventorySearch() {
                         <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-left text-sm font-semibold text-gray-900">
                           公斤
                         </th>
+                        <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-left text-sm font-semibold text-gray-900">
+                          用途
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
@@ -294,6 +299,7 @@ export default function InventorySearch() {
                               {entry.formatted_collect_date}
                             </td>
                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{entry.chemical_raw_material_output_kg}</td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{entry.output_usage}</td>
                           </tr>
                         ))
                       ) : (
