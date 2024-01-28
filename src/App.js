@@ -8,7 +8,8 @@ import MaterialByDate from './pages/daily_material_collect';
 import DailyMaterialDetail from './pages/daily_material_detail';
 import MaterialSearchAdd from './pages/material_search_add';
 import InventorySearch from './pages/inventory_search';
-import ChemicalList from './pages/chemical_list'
+import ChemicalList from './pages/chemical_list';
+import ChemicalInput from './pages/chemical_input';
 
 function App() {
   const location = useLocation();
@@ -38,6 +39,7 @@ function App() {
             <Route path="/material-search" element={<MaterialSearchAdd />} />
             <Route path='/inventory-search' element={<InventorySearch />} />
             <Route path='/chemical_list' element={<ChemicalList />} />
+            <Route path='/chemical_input' element={<ChemicalInput />} />
           </>
         )}
 

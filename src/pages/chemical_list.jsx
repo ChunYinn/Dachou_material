@@ -1,16 +1,12 @@
 import { Fragment, useState, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import TextField from '@mui/material/TextField';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import '../../src/index.css'
 
-export default function MaterialAssign() {
+export default function ChemicalList() {
   const navigate = useNavigate();
   // State for filters
   const [idFilter, setIDFilter] = useState('');
