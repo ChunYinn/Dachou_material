@@ -732,48 +732,37 @@ app.get('/get-chemicals', async (req, res) => {
   }
 });
 
-
-//-------------化工原料入庫-----------------------------------------------
-//get list of all chemical inputs
-app.get('/get-chemical_inputs', async (req, res) => {
+//get export information for each row
+// Endpoint to get export history by batch number
+app.get('/get-export-history/:batchNumber', async (req, res) => {
   try {
+    const { batchNumber } = req.params;
     const connection = await mysql.createConnection(dbConfig);
+
     const sql = `
-    SELECT
-      DATE_FORMAT(cii.input_date, '%Y-%m-%d') as input_date,
-      cii.chemical_raw_material_id,
-      rmf.chemical_raw_material_name,
-      cii.chemical_raw_material_batch_no,
-      cii.chemical_raw_material_input_kg,
-      cii.batch_kg,
-      COALESCE(cii.chemical_raw_material_position, "無") AS chemical_raw_material_position,
-      COALESCE(cii.chemical_raw_material_supplier, "無") AS chemical_raw_material_supplier,
-      cii.input_test_hardness,
-      COALESCE(cii.test_employee, "無") AS test_employee,
-      CASE
-        WHEN cii.quality_check = 1 THEN "合格"
-        WHEN cii.quality_check = 0 THEN "不合格"
-        ELSE cii.quality_check -- You might want to handle other values or keep it as is
-      END AS quality_check,
-      COALESCE(cii.supplier_material_batch_no, "無") AS supplier_material_batch_no
-    FROM
-      chemical_individual_input cii
-    INNER JOIN
-      rubber_raw_material_file rmf
-    ON
-      cii.chemical_raw_material_id = rmf.chemical_raw_material_id;
+      SELECT 
+        chemical_raw_material_batch_no,
+        DATE_FORMAT(CONVERT_TZ(collect_date, '+00:00', '+08:00'), '%Y-%m-%d') as formatted_collect_date,
+        chemical_raw_material_output_kg
+      FROM 
+        chemical_individual_output
+      WHERE 
+        chemical_raw_material_batch_no = ?
     `;
 
-    const [chemicals] = await connection.execute(sql);
+    const [results] = await connection.execute(sql, [batchNumber]);
     await connection.end();
-    res.json(chemicals);
+
+    res.json(results);
   } catch (error) {
-    console.error('Error fetching chemicals:', error.message);
-    res.status(500).send('Error fetching chemicals');
+    console.error('Error getting export history:', error.message);
+    res.status(500).send('Error getting export history');
   }
 });
+
 
 
 const server = app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
+  

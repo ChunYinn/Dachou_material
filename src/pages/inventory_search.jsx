@@ -289,7 +289,7 @@ export default function InventorySearch() {
                     <tbody className="divide-y divide-gray-200 bg-white">
                       {exportHistory.length > 0 ? (
                         exportHistory.map((entry, index) => (
-                          <tr key={index}>
+                          <tr key={index} className='bg-yellow-100'>
                             <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                               {entry.formatted_collect_date}
                             </td>

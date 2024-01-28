@@ -38,6 +38,8 @@ function App() {
             <Route path="/assign" element={<MaterialAssign />} />
             <Route path="/material-search" element={<MaterialSearchAdd />} />
             <Route path='/inventory-search' element={<InventorySearch />} />
+            <Route path='/chemical_list' element={<ChemicalList />} />
+            <Route path='/chemical_input' element={<ChemicalInput />} />
           </>
         )}
 
@@ -48,7 +50,7 @@ function App() {
 
         <Route path="/daily-collect" element={<MaterialByDate />} />    
         <Route path="/details/:date" element={<DailyMaterialDetail />} />
-        
+
         {/* Redirect non-manager users trying to access manager-only routes */}
         {!isManager && isLoggedIn && (
           <Route path="*" element={<Navigate to="/daily-collect" replace />} />
