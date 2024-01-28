@@ -8,6 +8,8 @@ import MaterialByDate from './pages/daily_material_collect';
 import DailyMaterialDetail from './pages/daily_material_detail';
 import MaterialSearchAdd from './pages/material_search_add';
 import InventorySearch from './pages/inventory_search';
+import ChemicalList from './pages/chemical_list';
+import ChemicalInput from './pages/chemical_input';
 
 function App() {
   const location = useLocation();
