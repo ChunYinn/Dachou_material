@@ -76,6 +76,7 @@ export default function InventorySearch() {
 
   const handleSearch = () => {
     setExportHistory([]);
+    setSelectedRowIndex(null);
     
     if (inputFields.chemicalId) {
       fetchMaterials('chemicalId', inputFields.chemicalId);
