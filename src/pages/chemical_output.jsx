@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import '../../src/index.css'
 
 
-export default function ChemicalInput() {
+export default function ChemicalOutput() {
     const navigate = useNavigate();
   // State for filters
   const [dateFilter, setDateFilter] = useState('');
@@ -26,7 +26,7 @@ export default function ChemicalInput() {
 
   // Function to fetch chemicals
   const fetchChemicals = () => {
-    axios.get('http://localhost:5000/get-chemical_inputs')
+    axios.get('http://localhost:5000/get-chemical_outputs')
       .then(response => {
         setChemicals(response.data); // Set the chemicals in state
       })
@@ -86,7 +86,7 @@ export default function ChemicalInput() {
   const filteredChemicals = chemicals.filter((chemical) => {
     
     return (
-        chemical.input_date.includes(dateFilter) &&
+        chemical.collect_date.includes(dateFilter) &&
         chemical.chemical_raw_material_id.includes(idFilter) &&
         chemical.chemical_raw_material_name.includes(nameFilter) && 
         chemical.chemical_raw_material_batch_no.includes(batchFilter) &&
@@ -104,7 +104,7 @@ export default function ChemicalInput() {
       <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
-            <h1 className="text-4xl font-semibold leading-6 text-gray-900">化工入庫查詢</h1>
+            <h1 className="text-4xl font-semibold leading-6 text-gray-900">化工出庫查詢</h1>
           </div>
         </div>
         <div className="mt-8 flow-root">
@@ -116,7 +116,7 @@ export default function ChemicalInput() {
                     <tr>
                     <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm text-gray-900 sm:pl-6" style={{width: '12.5%'}}>
                         <div className="flex items-center"> {/* Flex container */}
-                          入庫日期
+                          出庫日期
                         </div>
                         <input type="text" value={dateFilter} onChange={handleDateFilterChange} 
                         className="mt-2 block w-full h-7 p-1 border rounded small-placeholder"
@@ -189,7 +189,7 @@ export default function ChemicalInput() {
                       </th>
                       
                       <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap" style={{width: '12.5%'}}>
-                        入庫公斤
+                        出庫公斤
                       </th>
                       <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap" style={{width: '12.5%'}}>
                         目前公斤
@@ -211,7 +211,7 @@ export default function ChemicalInput() {
                       filteredChemicals.map((chemical) => (
                         <tr key={chemical.chemical_raw_material_batch_no}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3  text-gray-500 sm:pl-6">
-                          {chemical.input_date}
+                          {chemical.collect_date}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_id}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_name}</td>
@@ -223,7 +223,7 @@ export default function ChemicalInput() {
                           <td className={`whitespace-nowrap px-3 py-4 ${chemical.quality_check === '合格' ? 'text-green-600' : chemical.quality_check === '不合格' ? 'text-red-500' : 'text-gray-500'}`}>
                             {chemical.quality_check}
                           </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_input_kg}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_output_kg}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.batch_kg}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.input_test_hardness}</td>
 

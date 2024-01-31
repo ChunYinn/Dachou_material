@@ -800,6 +800,52 @@ app.get('/get-chemical_inputs', async (req, res) => {
   }
 });
 
+//-------------化工原料出庫-----------------------------------------------
+//get list of all chemical output
+
+app.get('/get-chemical_outputs', async (req, res) => {
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `
+      SELECT
+        DATE_FORMAT(cio.collect_date, '%Y-%m-%d') AS collect_date,
+        cii.chemical_raw_material_id,
+        rmf.chemical_raw_material_name,
+        cii.chemical_raw_material_batch_no,
+        cio.chemical_raw_material_output_kg,
+        cii.batch_kg,
+        COALESCE(cii.chemical_raw_material_position, "無") AS chemical_raw_material_position,
+        COALESCE(cii.chemical_raw_material_supplier, "無") AS chemical_raw_material_supplier,
+        cii.input_test_hardness,
+        COALESCE(cii.test_employee, "無") AS test_employee,
+        CASE
+          WHEN cii.quality_check = 1 THEN "合格"
+          WHEN cii.quality_check = 0 THEN "不合格"
+          ELSE cii.quality_check -- Handle other values or keep as is
+        END AS quality_check,
+        COALESCE(cii.supplier_material_batch_no, "無") AS supplier_material_batch_no,
+        COALESCE(cio.output_usage, "無") AS output_usage
+      FROM
+        chemical_individual_input cii
+      INNER JOIN
+        rubber_raw_material_file rmf
+      ON
+        cii.chemical_raw_material_id = rmf.chemical_raw_material_id
+      INNER JOIN
+        chemical_individual_output cio
+      ON
+        cii.chemical_raw_material_batch_no = cio.chemical_raw_material_batch_no;
+
+    `;
+
+    const [chemicals] = await connection.execute(sql);
+    await connection.end();
+    res.json(chemicals);
+  } catch (error) {
+    console.error('Error fetching chemicals:', error.message);
+    res.status(500).send('Error fetching chemicals');
+  }
+});
 
 const server = app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
