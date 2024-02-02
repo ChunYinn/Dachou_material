@@ -701,6 +701,99 @@ app.get('/search-materials-by-batch', async (req, res) => {
   }
 });
 
+//add import to chemical input table
+app.post('/add-chemical-import', async (req, res) => {
+  try {
+    const {
+      chemical_raw_material_batch_no,
+      input_date,
+      chemical_raw_material_id,
+      supplier_material_batch_no,
+      chemical_raw_material_input_kg,
+      chemical_raw_material_position,
+      chemical_raw_material_supplier,
+      test_employee,
+      input_test_hardness,
+      batch_kg
+    } = req.body;
+    
+    // Create a new database connection
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Insert the new import data into the chemical_individual_input table
+    const sql = `
+      INSERT INTO chemical_individual_input (
+        chemical_raw_material_batch_no,
+        input_date,
+        chemical_raw_material_id,
+        supplier_material_batch_no,
+        chemical_raw_material_input_kg,
+        chemical_raw_material_position,
+        chemical_raw_material_supplier,
+        test_employee,
+        input_test_hardness,
+        batch_kg
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const results = await connection.execute(sql, [
+      chemical_raw_material_batch_no,
+      input_date,
+      chemical_raw_material_id,
+      supplier_material_batch_no,
+      chemical_raw_material_input_kg,
+      chemical_raw_material_position,
+      chemical_raw_material_supplier,
+      test_employee,
+      input_test_hardness,
+      batch_kg
+    ]);
+
+    // Close the database connection
+    await connection.end();
+
+    // Send a success response
+    res.status(200).json({ message: 'New chemical import added successfully', data: results[0] });
+  } catch (error) {
+    // Handle any errors
+    console.error('Error adding new chemical import:', error.message);
+    res.status(500).send('Error adding new chemical import');
+  }
+});
+
+// Add export to chemical output table
+app.post('/export-chemical-material', async (req, res) => {
+  try {
+    const { today, batchNo, kilograms, purpose } = req.body;
+    
+    const connection = await mysql.createConnection(dbConfig);
+
+    const sql = `
+      INSERT INTO chemical_individual_output (
+        collect_date,
+        chemical_raw_material_batch_no,
+        chemical_raw_material_output_kg,
+        output_usage
+      ) VALUES (?, ?, ?, ?)
+    `;
+
+    const results = await connection.execute(sql, [
+      today,
+      batchNo,
+      kilograms,
+      purpose
+    ]);
+
+    await connection.end();
+
+    res.status(200).json({ message: 'Export data added successfully', data: results[0] });
+  } catch (error) {
+    console.error('Error exporting chemical material:', error.message);
+    res.status(500).send('Error exporting chemical material');
+  }
+});
+
+
 //-------------化工原料庫存總表-----------------------------------------------
 //get list of all chemicals and current stocks
 app.get('/get-chemicals', async (req, res) => {
