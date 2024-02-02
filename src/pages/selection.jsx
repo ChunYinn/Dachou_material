@@ -27,6 +27,9 @@ export default function Selection() {
   const navigateChemicalInput = () => {
     navigate('/chemical_input');
   };
+  const navigateChemicalOutput = () => {
+    navigate('/chemical_output');
+  };
 
   return (
     <div className="flex flex-col justify-center items-center h-screen" style={{ height: 'calc(100vh - 120px)' }}> 
@@ -79,6 +82,13 @@ export default function Selection() {
           onClick={navigateChemicalInput}
         >
           化工入庫查詢
+        </button>
+        <button
+          type="button"
+          className="rounded-md bg-gray-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 w-64 h-32"
+          onClick={navigateChemicalOutput}
+        >
+          化工出庫查詢
         </button>
       </div>
     </div>

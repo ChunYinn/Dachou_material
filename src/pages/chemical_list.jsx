@@ -124,7 +124,7 @@ export default function ChemicalList() {
   return (
     
     <div className="flex justify-center items-center mt-14">
-      <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
             <h1 className="text-4xl font-semibold leading-6 text-gray-900">化工原料庫存總表</h1>
@@ -140,40 +140,40 @@ export default function ChemicalList() {
           </div>
         </div>
         <div className="mt-8 flow-root">
-          <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+          <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-7 lg:-mx-8">
             <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
               <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg" style={{ maxHeight: '60vh', overflowY: 'auto' }} >
                 <table className="min-w-full divide-y divide-gray-300">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
-                    <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap" style={{width: '12.5%'}}>
+                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-md font-semibold text-gray-900 sm:pl-6" style={{width: "15%"}}>
                         <div className="flex items-center">
                           化工原料ID
                         </div>
-                        <input type="text" value={idFilter} onChange={handleIDFilterChange} className="mt-2 block w-full h-7 p-1 border rounded small-placeholder"
+                        <input type="text" value={idFilter} onChange={handleIDFilterChange} className="mt-2 block h-7 p-1 border rounded small-placeholder"
                         placeholder="ex: 01-01"/>
                       </th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap" style={{width: '12.5%'}}>
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900" style={{width: "15%"}}>
                         <div className="flex items-center">
                           化工原料名稱
                         </div>
                         <input type="text" value={nameFilter} onChange={handleNameFilterChange} 
-                        className="mt-2 block w-full h-7 p-1 border rounded small-placeholder"
+                        className="mt-2 block h-7 p-1 border rounded small-placeholder"
                         placeholder="ex: AN-550"/>
                       </th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap" style={{width: '12.5%'}}>
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         目前庫存
                       </th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap" style={{width: '12.5%'}}>
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         安全庫存量
                       </th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap" style={{width: '12.5%'}}>
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         合格庫存
                       </th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap" style={{width: '12.5%'}}>
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         不合格庫存
                       </th>
-                      <th scope="col" className="px-3 py-3 text-left text-sm text-gray-900 whitespace-nowrap">
+                      <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900" style={{width: "12%"}}>
                         需補貨
                         <input
                           type="text"
@@ -196,7 +196,9 @@ export default function ChemicalList() {
                     {filteredChemicals.length > 0 ? (
                       filteredChemicals.map((chemical) => (
                         <tr key={chemical.chemical_raw_material_id}>
-                          <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_id}</td>
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3  text-gray-500 sm:pl-6">
+                          {chemical.chemical_raw_material_id}
+                          </td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_name}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_current_stock}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.safty_stock_value}</td>
