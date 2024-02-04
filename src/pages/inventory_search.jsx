@@ -284,7 +284,7 @@ export default function InventorySearch() {
       <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
             <div className="sm:flex-auto">
-              <h1 className="text-4xl mb-4 font-semibold leading-6 text-gray-900">化工原料庫存管理</h1>
+              <h1 className="text-4xl mb-4 font-semibold leading-6 text-gray-900">化工原料庫存單項</h1>
             </div>
             <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex space-x-4">
         

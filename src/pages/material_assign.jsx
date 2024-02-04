@@ -122,7 +122,7 @@ export default function MaterialAssign() {
       <div className="w-full max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
-            <h1 className="text-4xl font-semibold leading-6 text-gray-900">領化工原料登記</h1>
+            <h1 className="text-4xl font-semibold leading-6 text-gray-900">領料單輸入</h1>
           </div>
           <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex space-x-4">
             <button

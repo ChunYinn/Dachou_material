@@ -5,25 +5,33 @@ import { useNavigate } from 'react-router-dom';
 import userImg from '../assets/tachou_user.jpg';
 import tachouLogo from '../assets/tachou_logo.jpg';
 import { Popover } from '@headlessui/react'
-import { ChevronDownIcon, PhoneIcon, PlayCircleIcon } from '@heroicons/react/20/solid'
+import { ChevronDownIcon} from '@heroicons/react/20/solid'
 import {
-  ArrowPathIcon,
   ChartPieIcon,
   CursorArrowRaysIcon,
-  FingerPrintIcon,
   SquaresPlusIcon,
+  IdentificationIcon,
+  ListBulletIcon,
+  ArrowUturnDownIcon,
+  ArrowUturnUpIcon,
+  DocumentPlusIcon,
+  DocumentMagnifyingGlassIcon,
+  ArchiveBoxIcon,
+
 } from '@heroicons/react/24/outline'
 
+
+
 const solutions = [
-  { name: 'Analytics', description: 'Get a better understanding of your traffic', href: '#', icon: ChartPieIcon },
-  { name: 'Engagement', description: 'Speak directly to your customers', href: '#', icon: CursorArrowRaysIcon },
-  { name: 'Security', description: "Your customers' data will be safe and secure", href: '#', icon: FingerPrintIcon },
-  { name: 'Integrations', description: 'Connect with third-party tools', href: '#', icon: SquaresPlusIcon },
-  { name: 'Automations', description: 'Build strategic funnels that will convert', href: '#', icon: ArrowPathIcon },
+  { name: '領料單輸入', description: '每日開料輸入', href: '/assign', icon: DocumentPlusIcon },
+  { name: '領料單查詢', description: '審核每日領料進度', href: '/daily-collect', icon: DocumentMagnifyingGlassIcon },
+  { name: '膠料基本檔', description: "查詢新增配方", href: '/material-search', icon: IdentificationIcon },
+  { name: '化工庫存總表', description: '查詢新增化工原料', href: '/chemical_list', icon: ListBulletIcon },
+  { name: '化工庫存單項', description: '出入庫單項化工原料', href: '/inventory-search', icon: ArchiveBoxIcon },
 ]
 const callsToAction = [
-  { name: 'Watch demo', href: '#', icon: PlayCircleIcon },
-  { name: 'Contact sales', href: '#', icon: PhoneIcon },
+  { name: '入庫查詢', href: '/chemical_input', icon: ArrowUturnDownIcon },
+  { name: '出庫查詢', href: '/chemical_output', icon: ArrowUturnUpIcon },
 ]
 
 function classNames(...classes) {
@@ -163,8 +171,8 @@ export default function NavBar() {
 export function Example() {
   return (
     <Popover className="relative">
-      <Popover.Button className="inline-flex items-center gap-x-1 text-sm font-semibold leading-6 text-gray-900">
-        <span>Solutions</span>
+      <Popover.Button className="inline-flex items-center gap-x-1 text-medium font-semibold leading-6 text-gray-800">
+        <span>目錄</span>
         <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
       </Popover.Button>
 

@@ -78,7 +78,7 @@ export default function MaterialByDate() {
      
         {/* Title and Filter Input */}
         <div className="text-center mt-12 mb-4">
-          <p className="text-4xl font-bold mb-4">領料單總覽</p>
+          <p className="text-4xl font-bold mb-4">領料單查詢</p>
           <input
             type="text"
             placeholder="日期篩選..."
