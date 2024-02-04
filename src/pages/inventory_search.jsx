@@ -108,13 +108,15 @@ export default function InventorySearch() {
   // State for managing dialog visibility
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedBatchNo, setSelectedBatchNo] = useState('');
+  const [selectedUsageKgRemain, setselectedUsageKgRemain] = useState('');
 
   const toggleExportDialog = () => {
     setIsExportDialogOpen(!isExportDialogOpen);
   };
 
-  const handleExportButtonClick = (batchNo) => {
+  const handleExportButtonClick = (batchNo, RemainKg) => {
     setSelectedBatchNo(batchNo);
+    setselectedUsageKgRemain(RemainKg);
     toggleExportDialog();
   };
 
@@ -425,7 +427,7 @@ export default function InventorySearch() {
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.supplier_material_batch_no}</td>
                                 <td className="relative whitespace-nowrap py-4 pl-3 text-right text-sm font-medium sm:pr-6">
                                   <button
-                                    onClick={() => handleExportButtonClick(input.chemical_raw_material_batch_no)}
+                                    onClick={() => handleExportButtonClick(input.chemical_raw_material_batch_no, input.batch_kg)}
                                     className="text-red-600 hover:text-red-900 hover:underline"
                                   >
                                     出庫
@@ -459,6 +461,7 @@ export default function InventorySearch() {
                 open={isExportDialogOpen}
                 onClose={toggleExportDialog}
                 batchNo={selectedBatchNo}
+                kgRemain={selectedUsageKgRemain}
                 onExportSubmit={onExportSubmit}
               />
               
@@ -690,7 +693,7 @@ export default function InventorySearch() {
   )
 }
 
-export function ExportDialog({ open, onClose, batchNo, onExportSubmit }) {
+export function ExportDialog({ open, onClose, batchNo, kgRemain, onExportSubmit }) {
   const [kilograms, setKilograms] = useState('');
   const [purpose, setPurpose] = useState('');
 
@@ -699,6 +702,9 @@ export function ExportDialog({ open, onClose, batchNo, onExportSubmit }) {
     // Validate input here if necessary
     if (!kilograms || !purpose) {
       alert("請填寫全部");
+      return;
+    } else if (parseFloat(kilograms) > parseFloat(kgRemain)) {
+      alert("出庫公斤數不可大於剩餘公斤數");
       return;
     }
 
@@ -753,7 +759,7 @@ export function ExportDialog({ open, onClose, batchNo, onExportSubmit }) {
                   {/* Input Fields */}
                   <div className="mt-4">
                     <label htmlFor="exportKG" className="block text-sm font-medium text-gray-700">
-                      出庫 (公斤)
+                        出庫 (剩餘公斤: <span style={{ color: 'red' }}>{kgRemain}</span>)
                     </label>
                     <input
                       type="number"
