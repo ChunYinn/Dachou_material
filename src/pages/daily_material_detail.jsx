@@ -266,7 +266,7 @@ export default function DailyMaterialDetail() {
             );
   
             return (
-              <div key={details.daily_material_formula_id} className="p-4 border rounded shadow-sm w-full mx-2 mb-4 max-w-4xl">
+              <div key={details.daily_material_formula_id} className="mt-4 p-4 border rounded shadow-sm w-full mx-2 mb-4 max-w-4xl">
 
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">打料單號 {details.order}</h3>
