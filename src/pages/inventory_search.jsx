@@ -127,7 +127,18 @@ export default function InventorySearch() {
       
       if (response.status === 200) {
         alert('Export successful!');
-        setIsExportDialogOpen(false); // Assuming you have this state in your component
+        setIsExportDialogOpen(false);
+
+        //refetch after submit  
+        fetchMaterials('chemicalId', inputFields.chemicalId);
+
+        try {
+          const response = await axios.get(`http://localhost:5000/get-export-history/${exportData.batchNo}`);
+          setExportHistory(response.data);
+        } catch (error) {
+          console.error('Error fetching export history after submit:', error);
+        }
+        
       } else {
         alert('Export failed! Please try again.');
       }
@@ -258,6 +269,7 @@ export default function InventorySearch() {
       setSupplierBatchNumber('');
   
       incrementSequenceAndGenerateBatchNumber();
+      fetchMaterials('chemicalId', inputFields.chemicalId);
 
     } catch (error) {
       console.error('Error submitting new import data:', error);
@@ -510,7 +522,7 @@ export default function InventorySearch() {
             {/* Divider */}
             <div className="mt-12 mb-4 w-full border-t border-gray-200"></div>
             {/* {here---------------input group for add new import-------------------------------}   */}
-            <div className="flex flex-col w-full mb-10">
+            <div className="flex flex-col w-full mb-12">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">新增入庫</h2>
 
               

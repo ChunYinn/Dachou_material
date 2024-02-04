@@ -124,7 +124,7 @@ export default function ChemicalList() {
   return (
     
     <div className="flex justify-center items-center mt-14">
-      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
             <h1 className="text-4xl font-semibold leading-6 text-gray-900">化工原料庫存總表</h1>
@@ -150,7 +150,7 @@ export default function ChemicalList() {
                         <div className="flex items-center">
                           化工原料ID
                         </div>
-                        <input type="text" value={idFilter} onChange={handleIDFilterChange} className="mt-2 block h-7 p-1 border rounded small-placeholder"
+                        <input type="text" value={idFilter} onChange={handleIDFilterChange} className="mt-2 w-32 block h-7 p-1 border rounded small-placeholder"
                         placeholder="ex: 01-01"/>
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900" style={{width: "15%"}}>
@@ -158,7 +158,7 @@ export default function ChemicalList() {
                           化工原料名稱
                         </div>
                         <input type="text" value={nameFilter} onChange={handleNameFilterChange} 
-                        className="mt-2 block h-7 p-1 border rounded small-placeholder"
+                        className="w-32 mt-2 block h-7 p-1 border rounded small-placeholder"
                         placeholder="ex: AN-550"/>
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
