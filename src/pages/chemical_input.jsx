@@ -1,9 +1,8 @@
-import { Fragment, useState, useEffect } from 'react'
-import { Dialog, Transition } from '@headlessui/react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { useRef, useState, useEffect } from 'react'
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import '../../src/index.css'
+import JsBarcode from 'jsbarcode';
 
 
 export default function ChemicalInput() {
@@ -18,9 +17,132 @@ export default function ChemicalInput() {
   const [employeeFilter, setEmployeeFilter] = useState('');
   const [qualityFilter, setQualityFilter] = useState('');
   const [supplierBatchFilter, setSupplierBatchFilter] = useState('');
+  // New state for tracking selected rows
+  const [selectedRows, setSelectedRows] = useState([]);
+  const barcodeRef = useRef(); // Ref for the hidden barcode element
+
+  // Function to handle selection of rows
+  const toggleRowSelected = (batchNo) => {
+    setSelectedRows(prevSelectedRows =>
+      prevSelectedRows.includes(batchNo)
+        ? prevSelectedRows.filter(id => id !== batchNo)
+        : [...prevSelectedRows, batchNo]
+    );
+  };
+
+  useEffect(() => {
+    // This effect is used to initially generate barcodes, it won't directly affect the print function
+    if (barcodeRef.current) {
+      JsBarcode(barcodeRef.current, 'Initial', {
+        format: 'CODE128',
+        displayValue: false,
+      });
+    }
+  }, []);
+
+  const generateBarcodeDataUrl = (text) => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, text, {
+        format: 'CODE128',
+        displayValue: false,
+      });
+      resolve(canvas.toDataURL("image/png"));
+    });
+  };
+
+  // Function to format and print selected rows
+  const printSelectedRows = async () => {
+    // Filter out only the selected chemicals based on batch number
+    const selectedChemicals = chemicals.filter(chemical =>
+      selectedRows.includes(chemical.chemical_raw_material_batch_no)
+    );
+  
+    // Map over the selected chemicals to create print content
+    const printContent = await Promise.all(selectedChemicals.map(async (chemical, index) => {
+      const barcodeDataUrl = await generateBarcodeDataUrl(chemical.chemical_raw_material_batch_no);
+      return `
+      <div style="${index !== 0 ? 'page-break-before: always;' : ''} font-family: 'Arial', sans-serif; width: 300px; margin: auto;">
+          <img src="${barcodeDataUrl}" alt="Barcode" style="width: 100%;">
+        </div>
+      <div style="text-align: center;">
+        <p style="margin-top: 5px; font-size: 20px; font-weight: bold;">${chemical.chemical_raw_material_batch_no}</p>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+        <tr>
+          <td style="border: 1px solid #000; padding: 5px; width: 50%;">
+            <span style="font-size: smaller;">化工原料ID</span><br>
+            <span style="font-size: larger; font-weight: bold;">${chemical.chemical_raw_material_id}</span>
+          </td>
+          <td style="border: 1px solid #000; padding: 5px; width: 50%;" colspan="2">
+            <span style="font-size: smaller;">化工原料名称</span><br>
+            <span style="font-size: larger; font-weight: bold;">${chemical.chemical_raw_material_name}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #000; padding: 5px;">
+            <span style="font-size: smaller;">颜色</span><br>
+            <span style="font-size: larger; font-weight: bold;">白色</span>
+          </td>
+          <td style="border: 1px solid #000; padding: 5px;" colspan="2">
+            <span style="font-size: smaller;">廠商</span><br>
+            <span style="font-size: larger; font-weight: bold;">${chemical.chemical_raw_material_supplier}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #000; padding: 5px;">
+            <span style="font-size: smaller;">進貨日期</span><br>
+            <span style="font-size: larger; font-weight: bold;">${chemical.input_date}</span>
+          </td>
+          <td style="border: 1px solid #000; padding: 5px;">
+            <span style="font-size: smaller;">硬度</span><br>
+            <span style="font-size: larger; font-weight: bold;">${chemical.input_test_hardness}</span>
+          </td>
+          <td style="border: 1px solid #000; padding: 5px;">
+            <span style="font-size: smaller;">重量</span><br>
+            <span style="font-size: larger; font-weight: bold;">${chemical.chemical_raw_material_input_kg}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #000; padding: 5px;" width="50%;">使用日期</td>
+          <td style="border: 1px solid #000; padding: 5px;" width="50%;" colspan="2">使用重量</td>
+        </tr>
+        <!-- Empty rows with increased height for spacing -->
+        <tr>
+          <td style="border: 1px solid #000; padding: 5px; height: 50px;">&nbsp;</td>
+          <td colspan="2" style="border: 1px solid #000; padding: 5px; height: 50px;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #000; padding: 5px; height: 50px;">&nbsp;</td>
+          <td colspan="2" style="border: 1px solid #000; padding: 5px; height: 50px;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #000; padding: 5px; height: 50px;">&nbsp;</td>
+          <td colspan="2" style="border: 1px solid #000; padding: 5px; height: 50px;">&nbsp;</td>
+        </tr>
+      </table>
+    </div>
 
 
 
+    
+      `;
+    }));
+
+    
+    // Open a new print window and write the print content
+    const printWindow = window.open('', '', 'height=600,width=800');
+    printWindow.document.write(printContent.join('')); // Ensure you join the array into a single string
+    printWindow.document.write('</body></html>');
+    printWindow.document.close(); // Close the document to finish loading
+
+    // Add a slight delay before printing to ensure content is fully loaded and rendered
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close(); // Close the print window after printing
+    }, 500); // Adjust delay as needed
+  };
+  
 
   const [chemicals, setChemicals] = useState([]); // State to store the chemicals
 
@@ -105,8 +227,18 @@ export default function ChemicalInput() {
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
             <h1 className="text-4xl font-semibold leading-6 text-gray-900">化工入庫查詢</h1>
+            </div>
+            <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex space-x-4">
+            <button
+              type="button"
+              className="block w-32 rounded-md bg-indigo-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+              onClick={printSelectedRows}
+            >
+              列印貼紙
+            </button>
           </div>
         </div>
+        <canvas ref={barcodeRef} style={{ display: 'none' }}></canvas>
         <div className="mt-8 flow-root">
           <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
@@ -226,6 +358,13 @@ export default function ChemicalInput() {
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_input_kg}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.batch_kg}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.input_test_hardness}</td>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.includes(chemical.chemical_raw_material_batch_no)}
+                              onChange={() => toggleRowSelected(chemical.chemical_raw_material_batch_no)}
+                            />
+                          </td>
 
                           
                         </tr>

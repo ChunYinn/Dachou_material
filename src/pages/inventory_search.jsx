@@ -414,12 +414,14 @@ export default function InventorySearch() {
                                   {input.formatted_input_date} {/* Format this date as needed */}
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.chemical_raw_material_batch_no}</td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.chemical_raw_material_input_kg}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.batch_kg}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.chemical_raw_material_position}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.chemical_raw_material_supplier}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.input_test_hardness}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.test_employee}</td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.quality_check}</td>
+                                <td className={`whitespace-nowrap px-3 py-4 text-sm ${input.quality_check === 1 ? 'text-green-600' : 'text-red-500'}`}>
+                                  {input.quality_check === 1 ? '合格' : '不合格'}
+                                </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{input.supplier_material_batch_no}</td>
                                 <td className="relative whitespace-nowrap py-4 pl-3 text-right text-sm font-medium sm:pr-6">
                                   <button
