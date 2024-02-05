@@ -15,10 +15,6 @@ const dbConfig = {
 
 // Multer setup for file uploads
 const storage = multer.memoryStorage();
-// const upload = multer({
-//   storage: storage,
-//   limits: { fileSize: 10 * 1024 * 1024 } // Limit of 10MB for file size
-// });
 
 app.use(cors());
 app.use(express.json());
@@ -549,6 +545,75 @@ app.get('/get-material-table-data/:materialID', async (req, res) => {
     res.status(500).send('Error fetching specific material info');
   }
 });
+
+// Endpoint to fetch material name
+app.get('/get-material-name/:id', async (req, res) => {
+  const chemicalRawMaterialID = req.params.id;
+  const name = await getChemicalRawMaterialName(chemicalRawMaterialID);
+  if (name !== 'Name Not Found' && name !== 'Error Fetching Name') {
+    res.json({ success: true, chemicalRawMaterialName: name });
+  } else {
+    res.status(404).json({ success: false, message: name });
+  }
+});
+
+async function getChemicalRawMaterialName(chemicalRawMaterialID) {
+  const connection = await mysql.createConnection(dbConfig);
+  try {
+    const [rows] = await connection.execute(
+      'SELECT chemical_raw_material_name FROM rubber_raw_material_file WHERE chemical_raw_material_id = ?',
+      [chemicalRawMaterialID]
+    );
+    await connection.end();
+    if (rows.length > 0) {
+      return rows[0].chemical_raw_material_name; // Return the name
+    } else {
+      return 'Name Not Found'; // Or any other fallback you prefer
+    }
+  } catch (error) {
+    console.error('Error fetching material name:', error);
+    await connection.end();
+    return 'Error Fetching Name';
+  }
+}
+
+// Endpoint to insert into rubber_file
+app.post('/add-rubber', async (req, res) => {
+  try {
+    const { materialID, propertyID, usageID, hardness, stickiness, colorID, customerUsage, mainIngredient } = req.body.rubberData;
+    const connection = await mysql.createConnection(dbConfig);
+    const [results] = await connection.execute(
+      `INSERT INTO rubber_file (material_id, property_id, usage_id, hardness, stickness, color_id, customer_usage, main_ingredient)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [materialID, propertyID, usageID, hardness, stickiness, colorID, customerUsage, mainIngredient]
+    );
+    
+    await connection.end();
+    res.send({ message: 'Rubber data saved successfully', id: results.insertId });
+  } catch (error) {
+    console.error('Error saving rubber data:', error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
+// Endpoint to insert into rubber_formula_file
+app.post('/add-rubber-formula', async (req, res) => {
+  try {
+    const { rawMaterials } = req.body;
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `INSERT INTO rubber_formula_file (creation_date, material_id, chemical_raw_material_id, usage_kg, sequence)
+                 VALUES ?`;
+    const values = rawMaterials.map(material => [material.creationDate, material.material_id, material.chemicalRawMaterialID, material.usageKg, material.sequence]);
+    console.log(values);
+    await connection.query(sql, [values]);
+    await connection.end();
+    res.send({ message: 'Rubber formula data saved successfully' });
+  } catch (error) {
+    console.error('Error saving rubber formula data:', error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 //-----------------inventory search-----------------------------------------------
 app.get('/search-materials-by-id', async (req, res) => {
   try {

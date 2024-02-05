@@ -1,11 +1,11 @@
-import { Fragment, useState, useEffect  } from 'react';
+import { Fragment, useState  } from 'react';
 import axios from 'axios';
 import { Dialog, Transition } from '@headlessui/react';
 import { PlusIcon } from '@heroicons/react/20/solid'
 
 //defaut value for left table showing material basic info
 const labels = ["膠料編號","材質","硬度","顏色","特殊用途","用途","主成分"];
-const data = ["", "", "", "", "", "", ""];
+// const data = ["", "", "", "", "", "", ""];
 
 
 export default function MaterialSearchAdd() {
@@ -37,7 +37,27 @@ export default function MaterialSearchAdd() {
   };
 
   const onSubmitNewMaterial = async (exportData) => {
-    console.log('New material export data:', exportData);
+    try {
+      // Send rubber data to the rubber_file table
+      const responseRubber = await axios.post('http://localhost:5000/add-rubber', {
+        rubberData: exportData.rubberData
+      });
+  
+      // Send raw materials data to the rubber_formula_file table
+      console.log(exportData.rawMaterials);
+      const responseFormula = await axios.post('http://localhost:5000/add-rubber-formula', {
+        rawMaterials: exportData.rawMaterials
+      });
+  
+      // Handle responses
+      console.log(responseRubber.data.message);
+      console.log(responseFormula.data.message);
+  
+      // If you need to do something after saving data, like redirecting or updating state, do it here
+    } catch (error) {
+      console.error('Error submitting new material:', error);
+      // Handle errors, such as displaying a notification to the user
+    }
   };
 
   //-------------------------------------
@@ -268,33 +288,126 @@ const handleSearch = async () => {
 
 
 export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
-  const [kilograms, setKilograms] = useState('');
+  const [materialID, setMaterialID] = useState('');
   const [purpose, setPurpose] = useState('');
+  const [mainIngredient, setMainIngredient] = useState('');
+  const [rawMaterialID, setRawMaterialID] = useState('');
+  const [usageKg, setUsageKg] = useState('');
+  const [materialFunction, setMaterialFunction] = useState('');
+  const [order, setOrder] = useState('');
+  const [rawMaterials, setRawMaterials] = useState([]);
+  // const [addRubberData, setAddRubberData] = useState({});
 
   // Handle the submission of export data
   const handleSubmit = () => {
-    // Validate input here if necessary
-    if (!kilograms || !purpose) {
-      alert("請填寫全部");
+    if (!materialID || !purpose || !mainIngredient) {
+      alert("請填寫膠料編號、用途、和主成分");
+      return;
+    }
+  
+    if (!validateMaterialID(materialID)) {
+      alert("膠料編號格式不正確");
+      return false;
+    }
+  
+    // Get the parts of the material ID
+    const parts = materialID.split('-');
+    const propertyID = parts[0][1];
+    const usageID = parts[1][0];
+    const hardness = parts[2];
+    const stickiness = parts[1][1];
+    const colorID = parts[4];
+  
+    // Create the rubber data object directly
+    const rubberData = {
+      materialID,
+      propertyID,
+      usageID,
+      hardness,
+      stickiness,
+      colorID,
+      customerUsage: purpose,
+      mainIngredient
+    };
+  
+    // Assuming the exportData includes both the main fields and the rawMaterials list
+    const exportData = { rubberData, rawMaterials };
+    onExportSubmit(exportData);
+    // Reset all fields
+    resetFields();
+    onClose(false);
+  };
+  
+
+  //formate like: HE-R9-30-01-W
+  const validateMaterialID = (id) => {
+    const regex = /^[A-Z]{2}-[A-Z][0-9]-[0-9]{2}-[0-9]{2}-[A-Z]$/;
+    return regex.test(id);
+  };
+
+  const handleAddRawMaterial = async() => {
+    if (!rawMaterialID || !usageKg) {
+      alert("請填寫完整的化工原料資料");
       return;
     }
 
-    // Prepare the data to be submitted
-    const exportData = { kilograms, purpose };
+    const chemicalRawMaterialName = await fetchMaterialNameByID(rawMaterialID);
 
-    // Call the provided onExportSubmit function to handle the export data
-    onExportSubmit(exportData);
+    const now = new Date();
+    const taipeiTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const creationDate = taipeiTime.toISOString().slice(0, 10);
 
-    // Optionally reset the form fields
-    setKilograms('');
-    setPurpose('');
-
-    // Close the dialog
-    onClose(false);
+    const newEntry = {
+      id: rawMaterials.length + 1,
+      material_id: materialID,
+      creationDate: creationDate,
+      chemicalRawMaterialID: rawMaterialID,
+      chemicalRawMaterialName: chemicalRawMaterialName || "未知名稱",
+      usageKg,
+      materialFunction,
+      sequence: order,
+    };
+    setRawMaterials([...rawMaterials, newEntry]);
+    // Clear fields after adding
+    setRawMaterialID('');
+    setUsageKg('');
+    setMaterialFunction('');
+    setOrder('');
   };
 
-  //temp data for display:
-  let materialTableData = [];
+  const resetFields = () => {
+    setMaterialID('');
+    setPurpose('');
+    setMainIngredient('');
+    setRawMaterialID('');
+    setUsageKg('');
+    setMaterialFunction('');
+    setOrder('');
+    setRawMaterials([]);
+  };
+
+  async function fetchMaterialNameByID(id) {
+    try {
+      const response = await fetch(`http://localhost:5000/get-material-name/${id}`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Material Name:', data.chemicalRawMaterialName);
+        return data.chemicalRawMaterialName;
+      } else {
+        throw new Error('Material not found');
+      }
+    } catch (error) {
+      console.error('Error fetching material name:', error);
+    }
+  }
+  
+
+  const handleDeleteRawMaterial = (idToDelete) => {
+    // Filter out the raw material entry with the matching id
+    const updatedRawMaterials = rawMaterials.filter(item => item.id !== idToDelete);
+    // Update the state with the filtered array
+    setRawMaterials(updatedRawMaterials);
+  };
 
   return (
     <Transition.Root show={open} as={Fragment}>
@@ -342,6 +455,7 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                         type="text"
                         name="material-id"
                         id="new-material-id"
+                        onChange={(e) => setMaterialID(e.target.value)}
                         className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                         placeholder=""
                       />
@@ -357,6 +471,7 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                         name="purpose"
                         id="purpose"
                         rows={1}
+                        onChange={(e) => setPurpose(e.target.value)}
                         className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                         placeholder=""
                       />
@@ -372,14 +487,17 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                         name="main-ingredient"
                         id="main-ingredient"
                         rows={1}
+                        onChange={(e) => setMainIngredient(e.target.value)}
                         className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                         placeholder=""
                       />
                     </div>
                   </div>                 
                 </div>
+                {/* Divider */}
+                <div className="my-5 border-t border-gray-300"></div>
                 {/* input for table */}
-                <div className="mt-5 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                   <div className="relative sm:col-span-1">
                     <label
                       htmlFor="raw-material-id"
@@ -391,6 +509,8 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                       type="text"
                       name="raw-material-id"
                       id="raw-material-id"
+                      value={rawMaterialID}
+                      onChange={(e) => setRawMaterialID(e.target.value)}
                       className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                       placeholder="DA03"
                     />
@@ -406,6 +526,8 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                       type="number"
                       name="usageKg"
                       id="usageKg"
+                      value={usageKg}
+                      onChange={(e) => setUsageKg(e.target.value)}
                       className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                       placeholder="..kg"
                     />
@@ -421,6 +543,8 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                       type="text"
                       name="materialFunction"
                       id="materialFunction"
+                      value={materialFunction}
+                      onChange={(e) => setMaterialFunction(e.target.value)}
                       className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                       placeholder="ex:增加硬度"
                     />
@@ -436,6 +560,8 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                       type="number"
                       name="order"
                       id="order"
+                      value={order}
+                      onChange={(e) => setOrder(e.target.value)}
                       className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                       placeholder="..kg"
                     />
@@ -444,6 +570,7 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                     <button
                       type="button"
                       className="rounded-full bg-green-600 p-1.5 text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+                      onClick={handleAddRawMaterial}
                     >
                       <PlusIcon className="h-5 w-5" aria-hidden="true" />
                     </button>
@@ -476,23 +603,27 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                               順序
                             </th> 
                             <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6 text-left text-sm font-semibold text-gray-900">
-                              用量單價
+                              <span className="sr-only">delete</span>
                             </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
-                          {materialTableData.length > 0 ? (
-                            materialTableData.map((tabledata, index) => (
+                          {rawMaterials.length > 0 ? (
+                            rawMaterials.map((tabledata, index) => (
                               <tr key={`${tabledata.id}-${index}`}>
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                                  {tabledata.creation_date}
+                                  {tabledata.creationDate}
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.chemical_raw_material_id}</td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.chemical_raw_material_name}</td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.usage_kg}</td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.material_function}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.chemicalRawMaterialID}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.chemicalRawMaterialName}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.usageKg}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.materialFunction}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.sequence}</td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.unit_price}</td>
+                                <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
+                                  <button className="text-red-600 hover:text-red-900 font-bold" onClick={() => handleDeleteRawMaterial(tabledata.id)}>
+                                    刪除
+                                  </button>
+                                </td>
                               </tr>
                             ))
 
