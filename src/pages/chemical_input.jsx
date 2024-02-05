@@ -82,7 +82,7 @@ export default function ChemicalInput() {
         <tr>
           <td style="border: 1px solid #000; padding: 5px;">
             <span style="font-size: smaller;">颜色</span><br>
-            <span style="font-size: larger; font-weight: bold;">白色</span>
+            <span style="font-size: larger; font-weight: bold;">無</span>
           </td>
           <td style="border: 1px solid #000; padding: 5px;" colspan="2">
             <span style="font-size: smaller;">廠商</span><br>

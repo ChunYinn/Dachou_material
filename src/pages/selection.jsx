@@ -1,95 +1,166 @@
 import { useNavigate } from 'react-router-dom';
+import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid'
+import { ExclamationCircleIcon, ChartBarIcon, CubeIcon, InboxArrowDownIcon} from '@heroicons/react/24/outline'
+import { BarChart } from '@mui/x-charts/BarChart';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+
+// Translation mapping for days of the week
+const dayOfWeekMap = {
+  'Monday': '週一',
+  'Tuesday': '週二',
+  'Wednesday': '週三',
+  'Thursday': '週四',
+  'Friday': '週五',
+  'Saturday': '週六',
+  'Sunday': '週日',
+};
+
 
 export default function Selection() {
-  const navigate = useNavigate();
+  const [dataCardInfo, setDataCardInfo] = useState({
+    notCollectedNo: 'Loading...',
+    totalKgToday: 'Loading...',
+    numberNeedingRestock: 'Loading...'
+  });
 
-  // Navigation functions
-  const navigateAssignMaterial = () => {
-    navigate('/assign');
+  // Function to fetch data from the server using axios
+  const fetchData = () => {
+    axios.get('http://localhost:5000/get-data-card-info')
+      .then(response => {
+        console.log(response.data);
+        // Assuming response.data is the object with your data
+        setDataCardInfo({
+          notCollectedNo: `${response.data.notCollectedNo} 筆`,
+          totalKgToday: `${response.data.totalKgToday} kg`,
+          numberNeedingRestock: `${response.data.numberNeedingRestock}`
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching data from the server:', error);
+        // Optionally update the state to indicate an error
+        setDataCardInfo({
+          notCollectedNo: 'Error',
+          totalKgToday: 'Error',
+          numberNeedingRestock: 'Error'
+        });
+      });
   };
 
-  const navigateList = () => {
-    navigate('/daily-collect');
-  };
+  useEffect(() => {
+    fetchData(); // Fetch data when the component mounts
+  }, []); // The empty array ensures this effect runs only once after the initial render
 
-  const navigateMaterialSearch = () => {
-    navigate('/material-search');
-  };
 
-  const navigateInventorySearch = () => {
-    navigate('/inventory-search');
-  };
+  // Updated Data Card with dynamic data
+  const stats = [
+    { id: 1, name: '昨日未完成筆數', stat: dataCardInfo.notCollectedNo, icon: ExclamationCircleIcon, link: '/daily-collect' },
+    { id: 2, name: '本日打料公斤數', stat: dataCardInfo.totalKgToday, icon: CubeIcon, link: '/assign' },
+    { id: 3, name: '需補貨化工', stat: dataCardInfo.numberNeedingRestock, icon: InboxArrowDownIcon, link: '/chemical_list' },
+  ];
+  
 
-  const navigateChemicalList = () => {
-    navigate('/chemical_list');
-  };
+  const [chartData, setChartData] = useState({
+    rubData: [],
+    silData: [],
+    xLabels: [],
+  });
 
-  const navigateChemicalInput = () => {
-    navigate('/chemical_input');
+  const fetchProductionData = () => {
+    axios.get('http://localhost:5000/get-production-data')
+      .then(response => {
+        const rubData = [];
+        const silData = [];
+        const xLabels = [];
+  
+        response.data.forEach(item => {
+          const dayOfWeek = dayOfWeekMap[item.day_of_week]; // Translate day of week
+  
+          // Convert production_date to a Date object and format it
+          const dateObj = new Date(item.production_date);
+          const formattedDate = `${dateObj.getMonth() + 1}-${dateObj.getDate()}`; // Format date as MM-DD
+  
+          xLabels.push(`${dayOfWeek} ${formattedDate}`); // Combine day and date
+  
+          rubData.push(item.rubber_kg);
+          silData.push(item.silicone_kg);
+        });
+  
+        setChartData({ rubData, silData, xLabels });
+      })
+      .catch(error => {
+        console.error('Error fetching production data:', error);
+      });
   };
-  const navigateChemicalOutput = () => {
-    navigate('/chemical_output');
-  };
+  
+
+  useEffect(() => {
+    fetchProductionData();
+  }, []);
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen" style={{ height: 'calc(100vh - 120px)' }}> 
-      <div className="flex justify-center items-center space-x-20 mb-6">
-        {/* First row of buttons */}
-        <button
-          type="button"
-          className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 w-64 h-32"
-          onClick={navigateAssignMaterial}
-        >
-          領料單輸入
-        </button>
-
-        <button
-          type="button"
-          className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 w-64 h-32"
-          onClick={navigateList}
-        >
-          領料單查詢
-        </button>
-      </div>
-
-      <div className="flex justify-center items-center space-x-20">
-        {/* Second row of buttons */}
-        <button
-          type="button"
-          className="rounded-md bg-gray-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 w-64 h-32"
-          onClick={navigateMaterialSearch}
-        >
-          膠料基本檔
-        </button>
-
-        <button
-          type="button"
-          className="rounded-md bg-gray-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 w-64 h-32"
-          onClick={navigateInventorySearch}
-        >
-          化工原料庫存管理
-        </button>
-        <button
-          type="button"
-          className="rounded-md bg-gray-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 w-64 h-32"
-          onClick={navigateChemicalList}
-        >
-          化工原料庫存總表
-        </button>
-        <button
-          type="button"
-          className="rounded-md bg-gray-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 w-64 h-32"
-          onClick={navigateChemicalInput}
-        >
-          化工入庫查詢
-        </button>
-        <button
-          type="button"
-          className="rounded-md bg-gray-600 px-3.5 py-2.5 text-2xl font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 w-64 h-32"
-          onClick={navigateChemicalOutput}
-        >
-          化工出庫查詢
-        </button>
+    
+    <div className="flex flex-col mt-10 items-center h-screen" style={{ height: 'calc(100vh - 120px)' }}> 
+        {/* Card Information */}
+        <div className='w-full max-w-6xl'>
+          {/* Data Card */}
+          <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {stats.map((item) => (
+              <div
+                key={item.id}
+                className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6"
+              >
+                <dt>
+                  <div className="absolute rounded-md bg-indigo-500 p-3">
+                    <item.icon className="h-6 w-6 text-white" aria-hidden="true" />
+                  </div>
+                  <p className="ml-16 truncate text-sm font-medium text-gray-500">{item.name}</p>
+                </dt>
+                <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
+                  <p className="text-2xl font-semibold text-gray-900">{item.stat}</p>
+                  
+                  <div className="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+                    <div className="text-sm">
+                    <a href={item.link} className="font-medium text-indigo-600 hover:text-indigo-500">
+                      查看<span className="sr-only"> {item.name} stats</span>
+                    </a>
+                      
+                    </div>
+                    
+                  </div>
+                  
+                </dd>
+              </div>
+            ))}
+            
+          </dl>
+          {/* Chart Card */}
+          <dl className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-1">    
+          <div className="p-5 relative overflow-hidden rounded-lg bg-white shadow sm:px-6">
+            <dt className="pb-4">
+              <div className="absolute rounded-md bg-indigo-500 p-3">
+                <ChartBarIcon className="h-6 w-6 text-white" aria-hidden="true" />
+              </div>
+              <p className="ml-16 truncate text-sm font-medium text-gray-500">一週每日打料公斤數</p>
+            </dt>
+            <dd className="ml-16 mb-4">
+              <div style={{ width: '100%', height: 'auto', padding: '0 16px' }}>
+              {chartData.xLabels.length > 0 && (
+                <BarChart
+                  width={500}
+                  height={300}
+                  series={[
+                    { data: chartData.silData, label: '矽膠', id: 'silId', stack: 'total' },
+                    { data: chartData.rubData, label: '橡膠', id: 'rubId', stack: 'total' },
+                  ]}
+                  xAxis={[{ data: chartData.xLabels, scaleType: 'band' }]}
+                />
+              )}
+              </div>
+            </dd>
+          </div>
+        </dl>
       </div>
     </div>
   )

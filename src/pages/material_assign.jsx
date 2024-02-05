@@ -116,6 +116,37 @@ export default function MaterialAssign() {
     );
   });
 
+  const [latestTotalDemand, setLatestTotalDemand] = useState({
+    production_date: '',
+    total_demand_sum: 0
+  });
+
+  useEffect(() => {
+    // Function to fetch the latest total demand data from the server
+    const fetchLatestTotalDemand = () => {
+      axios.get('http://localhost:5000/get-latest-total-demand')
+        .then(response => {
+          // Assuming the response data has the structure { production_date: 'date', total_demand_sum: 'sum' }
+          // Create a Date object from the production_date
+          const dateObj = new Date(response.data.production_date);
+
+          // Format the date as MM-YY
+          const formattedDate = `${('0' + (dateObj.getMonth() + 1)).slice(-2)}-${('0' + dateObj.getDate()).slice(-2)}`;
+          setLatestTotalDemand({
+            production_date: formattedDate,
+            total_demand_sum: response.data.total_demand_sum
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching latest total demand:', error);
+          // Optionally handle errors, such as setting an error state or displaying a message
+        });
+    };
+
+    // Call the fetch function when the component mounts
+    fetchLatestTotalDemand();
+  }, []); // The empty dependency array ensures this effect runs only once after the initial render
+
   return (
     
     <div className="flex justify-center items-center mt-14">
@@ -125,6 +156,12 @@ export default function MaterialAssign() {
             <h1 className="text-4xl font-semibold leading-6 text-gray-900">領料單輸入</h1>
           </div>
           <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex space-x-4">
+          <button
+              type="button"
+              className="block rounded-md bg-gray-400 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            >
+              {latestTotalDemand.production_date} 總公斤 {latestTotalDemand.total_demand_sum} kg
+            </button>
             <button
               type="button"
               className="block rounded-md bg-green-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"

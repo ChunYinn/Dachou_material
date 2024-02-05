@@ -198,6 +198,40 @@ app.put('/update-material/:id', async (req, res) => {
   }
 });
 
+//get most recent production in kg
+app.get('/get-latest-total-demand', async (req, res) => {
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    const sql = `
+      SELECT 
+        production_date, 
+        SUM(CAST(total_demand AS DECIMAL(10,2))) AS total_demand_sum
+      FROM 
+        material_assignments
+      WHERE 
+        production_date = (SELECT MAX(production_date) FROM material_assignments)
+      GROUP BY 
+        production_date;
+    `;
+
+    const [results] = await connection.execute(sql);
+
+    // Close the database connection
+    await connection.end();
+
+    // Check if results are found
+    if (results.length > 0) {
+      res.json(results[0]);
+    } else {
+      res.status(404).send('No data found for the latest production date.');
+    }
+  } catch (error) {
+    console.error('Error fetching the total demand for the latest production date:', error.message);
+    res.status(500).send('Error fetching the total demand for the latest production date');
+  }
+});
+
 
 //---------------------Daily Status------------------------------------------------------------------------------------
 app.get('/get-daily-material-status', async (req, res) => {
@@ -1073,6 +1107,99 @@ app.get('/get-chemical_outputs', async (req, res) => {
     res.status(500).send('Error fetching chemicals');
   }
 });
+//-------------Dashboard-----------------------------------------------
+//get 3 data for card
+app.get('/get-data-card-info', async (req, res) => {
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    //get 昨日未完成筆數
+    const sql_not_collected_no = `
+    SELECT COUNT(DISTINCT ma.material_assign_id) AS not_collected_no
+    FROM material_assignments ma
+    JOIN daily_material_formula dmf ON ma.material_assign_id = dmf.material_assign_id
+    WHERE ma.production_date = (
+        SELECT MAX(production_date)
+        FROM material_assignments
+        WHERE production_date < CURRENT_DATE
+    )
+    AND dmf.collecting_finished = FALSE;
+    `;
+    //get 本日打料公斤數
+    const sql_today_production = `
+    SELECT SUM(CAST(total_demand AS INT)) AS total_kg_today
+    FROM material_assignments
+    WHERE production_date = CURRENT_DATE;
+
+    `;
+    //get 需補貨化工
+    const sql_count_need_restock = `
+    SELECT COUNT(*) AS number_needing_restock
+    FROM chemical_stocks
+    WHERE need_restock = TRUE;
+    `;
+
+    // Execute each SQL query and store the result
+    const [notCollectedResults] = await connection.execute(sql_not_collected_no);
+    const [todayProductionResults] = await connection.execute(sql_today_production);
+    const [needRestockResults] = await connection.execute(sql_count_need_restock);
+
+    // Close the database connection
+    await connection.end();
+
+    // Construct a response object that includes the results from all three queries
+    const responseData = {
+      notCollectedNo: notCollectedResults[0].not_collected_no,
+      totalKgToday: todayProductionResults[0].total_kg_today,
+      numberNeedingRestock: needRestockResults[0].number_needing_restock
+    };
+
+    // Send the response object back to the client
+    res.json(responseData);
+  } catch (error) {
+    console.error('Error fetching data:', error.message);
+    res.status(500).send('Error fetching data');
+  }
+});
+
+//get data for chart 
+app.get('/get-production-data', async (req, res) => {
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `
+      SELECT 
+        DATE_FORMAT(sub.production_date, '%W') AS day_of_week,
+        sub.production_date,
+        SUM(CASE WHEN ma.material_id LIKE 'HS-%' THEN CAST(ma.total_demand AS DECIMAL(10,2)) ELSE 0 END) AS silicone_kg,
+        SUM(CASE WHEN ma.material_id NOT LIKE 'HS-%' THEN CAST(ma.total_demand AS DECIMAL(10,2)) ELSE 0 END) AS rubber_kg
+      FROM 
+        material_assignments ma
+      INNER JOIN (
+        SELECT DISTINCT production_date
+        FROM material_assignments
+        WHERE production_date <= CURRENT_DATE
+        ORDER BY production_date DESC
+        LIMIT 5
+      ) sub ON ma.production_date = sub.production_date
+      GROUP BY 
+        sub.production_date
+      ORDER BY 
+        sub.production_date ASC;
+    `;
+
+    const [results] = await connection.execute(sql);
+
+    // Close the database connection
+    await connection.end();
+
+    // Send the results back to the client
+    res.json(results);
+  } catch (error) {
+    console.error('Error fetching production data:', error.message);
+    res.status(500).send('Error fetching production data');
+  }
+});
+
+
 
 const server = app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
