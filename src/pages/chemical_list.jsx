@@ -35,8 +35,9 @@ export default function ChemicalList() {
 
   // Function to handle adding new material
   const handleAddClick = (assignmentData) => {
-    axios.post('http://localhost:5000/assign-material', assignmentData)
+    axios.post('http://localhost:5000/add-new-chemical-raw-material', assignmentData)
       .then(response => {
+        alert("化工原料新增成功!");
         fetchChemicals();
         setIsDialogOpen(false);
       })
@@ -47,16 +48,24 @@ export default function ChemicalList() {
   
 
   // Function to handle deleting a material
-  const handleDelete = (materialId) => {
-    axios.delete(`http://localhost:5000/delete-material/${materialId}`)
+const handleDelete = (chemical_raw_material_id) => {
+  const isConfirmed = window.confirm("確定要刪除這個化工原料嗎?");
+
+  // If the user confirmed, proceed with the deletion
+  if (isConfirmed) {
+    axios.delete(`http://localhost:5000/delete-chemical-raw-material/${chemical_raw_material_id}`)
       .then(() => {
+        alert("化工原料刪除成功!");
         fetchChemicals(); // Fetch the updated list of materials
-        console.log('Material deleted!');
       })
       .catch(error => {
-        console.error("Error deleting material", error);
+        console.error("Error deleting chemical raw material", error);
+        alert("Failed to delete chemical raw material");
       });
-  };
+  }
+};
+
+  
 
   const toggleDialog = () => {
     setIsDialogOpen(!isDialogOpen);
@@ -70,9 +79,9 @@ export default function ChemicalList() {
   
 
   //-----update function------
-  const handleEditClick = async (materialId) => {
+  const handleEditClick = async (chemical_raw_material_id) => {
     try {
-      const response = await axios.get(`http://localhost:5000/get-material/${materialId}`);
+      const response = await axios.get(`http://localhost:5000/get-chemical-raw-material-to-update/${chemical_raw_material_id}`);
       setEditingMaterial(response.data);
       console.log(response.data);
       toggleDialog();
@@ -82,16 +91,20 @@ export default function ChemicalList() {
   };
 
   const handleUpdateClick = (assignmentData) => {
-    axios.put(`http://localhost:5000/update-material/${editingMaterial.material_assign_id}`, assignmentData)
+  
+    axios.put(`http://localhost:5000/update-chemical-raw-material/${editingMaterial.chemical_raw_material_id}`, assignmentData)
       .then(() => {
+        alert("化工原料更新成功!");
         fetchChemicals();
         setIsDialogOpen(false);
-        setEditingMaterial(null); // Reset editing material
+        setEditingMaterial(null);
       })
       .catch(error => {
         console.error("Error updating material", error);
+        alert("Failed to update chemical raw material");
       });
   };
+  
 
 
   //--filter function
@@ -213,12 +226,12 @@ export default function ChemicalList() {
                             )}
                           </td>
                           <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
-                            <button className="text-yellow-600 hover:text-yellow-900 font-bold" onClick={() => handleEditClick(chemical.material_assign_id)}>
+                            <button className="text-yellow-600 hover:text-yellow-900 font-bold" onClick={() => handleEditClick(chemical.chemical_raw_material_id)}>
                               編輯
                             </button>
                           </td>
                           <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
-                            <button className="text-red-600 hover:text-red-900 font-bold" onClick={() => handleDelete(chemical.material_assign_id)}>
+                            <button className="text-red-600 hover:text-red-900 font-bold" onClick={() => handleDelete(chemical.chemical_raw_material_id)}>
                               刪除
                             </button>
                           </td>
@@ -267,7 +280,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
         setChemicalRawMaterialName(editingMaterial.chemical_raw_material_name);
         setMaterialFunction(editingMaterial.material_function);
         setUnitPrice(editingMaterial.unit_price);
-        setSafetyStockValue(editingMaterial.safety_stock_value);
+        setSafetyStockValue(editingMaterial.safty_stock_value);
       } else {
         // Reset the fields when not editing an existing material
         setChemicalRawMaterialId('');
@@ -279,8 +292,8 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
     }, [editingMaterial]);
   
     const prepareDataAndSubmit = () => {
-      if (!chemicalRawMaterialId || !chemicalRawMaterialName || !safetyStockValue) {
-        alert("請填寫化工原料ID,名稱和安全庫存量");
+      if (!chemicalRawMaterialId || !chemicalRawMaterialName || !safetyStockValue || !unitPrice) {
+        alert("請填寫化工原料ID,名稱, 單價, 和安全庫存量");
         return;
       }
   
@@ -294,40 +307,6 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
   
       onSubmit(assignmentData);
     };
-  
-  // Create a custom theme
-  const newTheme = createTheme({
-    components: {
-      // Your custom overrides
-      MuiPickersToolbar: {
-        styleOverrides: {
-          root: {
-            color: '#1565c0',
-            borderRadius: 2,
-            borderWidth: 1,
-            borderColor: '#2196f3',
-            border: '1px solid',
-            backgroundColor: '#bbdefb',
-          },
-        },
-      },
-      // Add other component overrides if needed
-    },
-  });
-
-  //date formatting
-  function convertToTaiwanDate(dateString) {
-    // Create a new Date object from the input string and add 8 hours for Taiwan time
-    const date = new Date(dateString);
-    date.setHours(date.getHours() + 8);
-  
-    // Format the date in yyyy-mm-dd format
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed
-    const day = date.getDate().toString().padStart(2, '0');
-  
-    return `${year}-${month}-${day}`;
-  }
   
 
   return (

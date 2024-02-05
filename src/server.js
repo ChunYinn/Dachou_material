@@ -893,6 +893,139 @@ app.get('/get-chemical_inputs', async (req, res) => {
   }
 });
 
+//新增化工原料入庫
+app.post('/add-new-chemical-raw-material', async (req, res) => {
+  const { chemical_raw_material_id, chemical_raw_material_name, material_function, unit_price, safety_stock_value } = req.body;
+  
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Insert into rubber_raw_material_file
+    const insertRubberRawMaterialFile = `
+      INSERT INTO rubber_raw_material_file (chemical_raw_material_id, chemical_raw_material_name, material_function, unit_price) 
+      VALUES (?, ?, ?, ?);
+    `;
+    await connection.execute(insertRubberRawMaterialFile, [chemical_raw_material_id, chemical_raw_material_name, material_function, unit_price]);
+
+    //Insert into chemical_stocks
+    const updateChemicalStocks = `
+      UPDATE chemical_stocks
+      SET safty_stock_value = ?
+      WHERE chemical_raw_material_id = ?;
+    `;
+
+    await connection.execute(updateChemicalStocks, [safety_stock_value, chemical_raw_material_id]);
+
+    await connection.end();
+
+    res.send("化工原料新增成功!");
+  } catch (error) {
+    console.error('Error adding new chemical raw material:', error.message);
+    res.status(500).send('Error adding new chemical raw material');
+  }
+});
+
+//刪除化工原料入庫
+app.delete('/delete-chemical-raw-material/:chemical_raw_material_id', async (req, res) => {
+  const { chemical_raw_material_id } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    // First, delete related rows from chemical_stocks
+    const deleteChemicalStocksQuery = `
+      DELETE FROM chemical_stocks
+      WHERE chemical_raw_material_id = ?;
+    `;
+    await connection.execute(deleteChemicalStocksQuery, [chemical_raw_material_id]);
+
+    // Then, delete the row from rubber_raw_material_file
+    const deleteRubberRawMaterialFileQuery = `
+      DELETE FROM rubber_raw_material_file
+      WHERE chemical_raw_material_id = ?;
+    `;
+    await connection.execute(deleteRubberRawMaterialFileQuery, [chemical_raw_material_id]);
+
+    await connection.end();
+
+    res.send("Chemical raw material and related stocks successfully deleted.");
+  } catch (error) {
+    console.error('Error deleting chemical raw material:', error.message);
+    res.status(500).send('Error deleting chemical raw material');
+  }
+});
+
+//更新化工原料入庫
+app.get('/get-chemical-raw-material-to-update/:chemical_raw_material_id', async (req, res) => {
+  const { chemical_raw_material_id } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const query = `
+      SELECT 
+        r.chemical_raw_material_id, 
+        r.chemical_raw_material_name, 
+        r.material_function, 
+        r.unit_price, 
+        c.safty_stock_value
+      FROM rubber_raw_material_file r
+      JOIN chemical_stocks c ON r.chemical_raw_material_id = c.chemical_raw_material_id
+      WHERE r.chemical_raw_material_id = ?;
+    `;
+
+    const [rows] = await connection.execute(query, [chemical_raw_material_id]);
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.json(rows[0]); // Sending back the first (and should be only) result.
+    } else {
+      res.status(404).send('Chemical raw material not found');
+    }
+  } catch (error) {
+    console.error('Failed to fetch chemical raw material details:', error.message);
+    res.status(500).send('Failed to fetch chemical raw material details');
+  }
+});
+
+// Endpoint to update a chemical raw material
+app.put('/update-chemical-raw-material/:chemical_raw_material_id', async (req, res) => {
+  const { chemical_raw_material_id } = req.params;
+  const { chemical_raw_material_name, material_function, unit_price, safety_stock_value } = req.body;
+
+  console.log(chemical_raw_material_id, chemical_raw_material_name, material_function, unit_price, safety_stock_value);
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    
+    // Update rubber_raw_material_file
+    const updateRubberRawMaterialFileQuery = `
+      UPDATE rubber_raw_material_file
+      SET 
+        chemical_raw_material_name = ?,
+        material_function = ?,
+        unit_price = ?
+      WHERE chemical_raw_material_id = ?;
+    `;
+    await connection.execute(updateRubberRawMaterialFileQuery, [chemical_raw_material_name, material_function, unit_price, chemical_raw_material_id]);
+
+    // Update chemical_stocks
+    const updateChemicalStocksQuery = `
+      UPDATE chemical_stocks
+      SET 
+        safty_stock_value = ?
+      WHERE chemical_raw_material_id = ?;
+    `;
+    await connection.execute(updateChemicalStocksQuery, [safety_stock_value, chemical_raw_material_id]);
+
+    await connection.end();
+
+    res.json({ message: "Chemical raw material updated successfully!" });
+  } catch (error) {
+    console.error('Failed to update chemical raw material:', error.message);
+    res.status(500).send('Failed to update chemical raw material');
+  }
+});
+
+
 //-------------化工原料出庫-----------------------------------------------
 //get list of all chemical output
 
