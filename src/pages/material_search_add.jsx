@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-
-const datatable = [
-  { date: '2024/01/01', id: 'DH10', name: 'AN-300', usage: '888',function:'軟化劑',order:'1',price:'$100' },
-  { date: '2024/01/01', id: 'DH10', name: 'AN-300', usage: '888',function:'軟化劑',order:'1',price:'$100' },
-]
-
 //defaut value for left table showing material basic info
 const labels = ["膠料編號","材質","硬度","顏色","特殊用途","用途","主成分"];
 const data = ["", "", "", "", "", "", ""];
@@ -216,8 +210,8 @@ const handleSearch = async () => {
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
                                   {tabledata.creation_date}
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.material_id}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.chemical_raw_material_id}</td>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.chemical_raw_material_name}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.usage_kg}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.material_function}</td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{tabledata.sequence}</td>

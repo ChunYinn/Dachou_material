@@ -493,6 +493,7 @@ app.get('/get-material-table-data/:materialID', async (req, res) => {
         DATE_FORMAT(CONVERT_TZ(creation_date, '+00:00', '+08:00'), '%Y-%m-%d') as creation_date,
         material_id, 
         chemical_raw_material_id,
+        chemical_raw_material_name,
         usage_kg,
         material_function,
         sequence,
