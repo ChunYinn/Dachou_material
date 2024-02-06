@@ -348,10 +348,29 @@ app.get('/get-material-detail/:date', async (req, res) => {
 
     // SQL query to select data where the date part of batch_number matches formattedDate
     const sql = `
-      SELECT *
-      FROM daily_material_formula
-      WHERE batch_number LIKE CONCAT(?, '%')
-      ORDER BY batch_number ASC
+    SELECT 
+    dmf.daily_material_formula_id,
+    dmf.material_assign_id,
+    ma.material_id,
+    ma.total_demand,
+    ma.production_sequence,
+    ma.production_machine,
+    dmf.chemical_raw_material_id,
+    rrmf.chemical_raw_material_name,
+    dmf.usage_kg,
+    ma.batch_number,
+    dmf.collecting_finished,
+    dmf.notes
+    FROM 
+        daily_material_formula dmf
+    JOIN 
+        material_assignments ma ON dmf.material_assign_id = ma.material_assign_id
+    JOIN 
+        rubber_raw_material_file rrmf ON dmf.chemical_raw_material_id = rrmf.chemical_raw_material_id
+    WHERE 
+        ma.batch_number LIKE CONCAT(?, '%')
+    ORDER BY 
+        ma.batch_number ASC;
     `;
 
     // Execute the query
@@ -519,17 +538,21 @@ app.get('/get-material-table-data/:materialID', async (req, res) => {
     const connection = await mysql.createConnection(dbConfig);
 
     const sql = `
-      SELECT 
-        DATE_FORMAT(CONVERT_TZ(creation_date, '+00:00', '+08:00'), '%Y-%m-%d') as creation_date,
-        material_id, 
-        chemical_raw_material_id,
-        chemical_raw_material_name,
-        usage_kg,
-        material_function,
-        sequence,
-        unit_price
-      FROM join_formula
-      WHERE material_id = ?
+    SELECT 
+    DATE_FORMAT(CONVERT_TZ(rf.creation_date, '+00:00', '+08:00'), '%Y-%m-%d') AS creation_date,
+    rf.material_id, 
+    rf.chemical_raw_material_id,
+    rm.chemical_raw_material_name,
+    rf.usage_kg,
+    rm.material_function,
+    rf.sequence,
+    rm.unit_price
+    FROM 
+        rubber_formula_file rf
+    JOIN 
+        rubber_raw_material_file rm ON rf.chemical_raw_material_id = rm.chemical_raw_material_id
+    WHERE 
+        rf.material_id = ?;
     `;
 
     const [rows] = await connection.execute(sql, [materialID]);
