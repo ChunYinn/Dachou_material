@@ -1,12 +1,10 @@
 import { useRef, useState, useEffect } from 'react'
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import '../../src/index.css'
 import JsBarcode from 'jsbarcode';
 
 
 export default function ChemicalInput() {
-    const navigate = useNavigate();
   // State for filters
   const [dateFilter, setDateFilter] = useState('');
   const [idFilter, setIDFilter] = useState('');

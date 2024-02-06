@@ -1,13 +1,9 @@
-import { Fragment, useState, useEffect } from 'react'
-import { Dialog, Transition } from '@headlessui/react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
+import { useState, useEffect } from 'react'
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import '../../src/index.css'
 
 
 export default function ChemicalOutput() {
-    const navigate = useNavigate();
   // State for filters
   const [dateFilter, setDateFilter] = useState('');
   const [idFilter, setIDFilter] = useState('');
@@ -208,10 +204,10 @@ export default function ChemicalOutput() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {filteredChemicals.length > 0 ? (
-                      filteredChemicals.map((chemical) => (
-                        <tr key={chemical.chemical_raw_material_batch_no}>
+                      filteredChemicals.map((chemical, index) => (
+                        <tr key={index}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3  text-gray-500 sm:pl-6">
-                          {chemical.collect_date}
+                            {chemical.collect_date}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_id}</td>
                           <td className="whitespace-nowrap px-3 py-4 text-gray-500">{chemical.chemical_raw_material_name}</td>

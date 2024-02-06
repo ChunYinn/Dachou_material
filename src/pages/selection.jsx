@@ -1,5 +1,3 @@
-import { useNavigate } from 'react-router-dom';
-import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid'
 import { ExclamationCircleIcon, ChartBarIcon, CubeIcon, InboxArrowDownIcon} from '@heroicons/react/24/outline'
 import { BarChart } from '@mui/x-charts/BarChart';
 import React, { useEffect, useState } from 'react';
@@ -99,6 +97,14 @@ export default function Selection() {
     fetchProductionData();
   }, []);
 
+  let rubDataNumeric = [];
+  let silDataNumeric = [];
+
+  if (chartData.xLabels.length > 0) {
+    rubDataNumeric = chartData.rubData.map(item => parseFloat(item));
+    silDataNumeric = chartData.silData.map(item => parseFloat(item));
+  }
+
   return (
     
     <div className="flex flex-col mt-10 items-center h-screen" style={{ height: 'calc(100vh - 120px)' }}> 
@@ -151,10 +157,16 @@ export default function Selection() {
                   width={500}
                   height={300}
                   series={[
-                    { data: chartData.silData, label: '矽膠', id: 'silId', stack: 'total' },
-                    { data: chartData.rubData, label: '橡膠', id: 'rubId', stack: 'total' },
+                    { data: silDataNumeric, label: '矽膠', id: 'silId', stack: 'total' },
+                    { data: rubDataNumeric, label: '橡膠', id: 'rubId', stack: 'total' },
                   ]}
-                  xAxis={[{ data: chartData.xLabels, scaleType: 'band' }]}
+                  xAxis={[
+                    {
+                      data: chartData.xLabels,
+                      scaleType: 'band',
+                      tooltipFormatter: (value) => value, // This ensures that X-axis tooltip displays the correct value
+                    }
+                  ]}
                 />
               )}
               </div>
