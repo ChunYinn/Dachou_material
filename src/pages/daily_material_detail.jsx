@@ -17,16 +17,27 @@ export default function DailyMaterialDetail() {
 
   const [showNotesDialog, setShowNotesDialog] = useState(false); // State to control dialog visibility
   const [selectedNotes, setSelectedNotes] = useState(''); // State to store notes value
+  const [popOutPosition, setPopOutPosition] = useState({ x: 0, y: 0 });
+  const [selectedRowId, setSelectedRowId] = useState(null);
+
 
   // Function to show the dialog when the icon is clicked
-  const handleIconClick = (notes) => {
+  const handleIconClick = (notes, materialId, event) => {
     setSelectedNotes(notes);
+    setSelectedRowId(materialId); // Set the ID of the selected row
+    const iconRect = event.currentTarget.getBoundingClientRect();
+    setPopOutPosition({
+      x: iconRect.left + window.scrollX,
+      y: iconRect.top + window.scrollY,
+    });
     setShowNotesDialog(true);
-  };
-
+  };  
+  
+  
   // Function to close the dialog
   const closeNotesDialog = () => {
     setShowNotesDialog(false);
+    setSelectedRowId(null);
   };
 
   useEffect(() => {
@@ -215,7 +226,7 @@ export default function DailyMaterialDetail() {
   const groupedDataEntries = Object.entries(groupedData);
 
   return (
-    <div className="flex flex-col items-center mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col items-center mx-auto max-w-8xl px-4 sm:px-6 lg:px-8">
       <p className="text-2xl text-indigo-600 font-bold mb-6 mt-12">
         打料日期 {date}
       </p>
@@ -270,14 +281,14 @@ export default function DailyMaterialDetail() {
       </div>    
   
       {groupedDataEntries.length > 0 ? (
-        <div className="flex flex-wrap justify-center -mx-2 w-full">
+        <div className={`flex flex-wrap justify-center -mx-2 w-full `}>
           {groupedDataEntries.map(([batchNumber, details]) => {
             const filteredMaterials = details.materials.filter((material) =>
               shouldDisplayMaterial(material.chemical_raw_material_id, selectedButton)
             );
   
             return (
-              <div key={details.daily_material_formula_id} className="mt-4 p-4 border rounded shadow-sm w-full mx-2 mb-4 max-w-4xl">
+              <div key={details.daily_material_formula_id} className="mt-4 p-4 border rounded shadow-sm w-full mx-2 mb-4 max-w-5xl">
 
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">打料單號 {details.order}</h3>
@@ -302,7 +313,7 @@ export default function DailyMaterialDetail() {
                     <tbody>
                       {filteredMaterials.length > 0 ? (
                         filteredMaterials.map((material) => (
-                          <tr key={material.daily_material_formula_id} className="bg-white">
+                          <tr key={material.daily_material_formula_id} className={`bg-white ${selectedRowId === material.daily_material_formula_id ? 'bg-yellow-100' : ''}`}>
                             <td className="px-4 py-2 whitespace-nowrap text-md text-gray-500">{material.chemical_raw_material_id}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{material.chemical_raw_material_name}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
@@ -325,12 +336,16 @@ export default function DailyMaterialDetail() {
                                   className="w-full px-2 py-1 border-b border-indigo-300 focus:outline-none focus:border-indigo-500"
                                   placeholder="..."
                                 />
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={() => handleIconClick(material.notes)}>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={(event) => handleIconClick(material.notes, material.daily_material_formula_id, event)}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                                 </svg>
                                 {showNotesDialog && (
-                                  <div className="absolute top-0 right-0 left-0 bottom-0 flex justify-center items-center bg-black bg-opacity-50">
-                                    <div className="bg-white p-4 rounded shadow-md">
+                                  <div className="absolute z-10" style={{ 
+                                    width: '350px',
+                                    top: popOutPosition.y-25, // Use the y position as calculated at the time of the click
+                                    left: popOutPosition.x+56, // Use the x position as calculated at the time of the click
+                                  }}>
+                                    <div className="bg-yellow-100 p-4 rounded shadow-md ">
                                       <h3 className="text-lg font-semibold mb-2">Notes</h3>
                                       <p>{selectedNotes}</p>
                                       <button className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" onClick={closeNotesDialog}>Close</button>
