@@ -7,8 +7,6 @@ export default function DailyMaterialDetail() {
   const [groupedData, setGroupedData] = useState({});
   const [mainGlueCollector, setMainGlueCollector] = useState('');
   const [promoterCollector, setPromoterCollector] = useState('');
-  const [collectorNotes, setCollectorNotes] = useState('');
-
 
   // Assuming the user role is stored in local storage
   const userRole = localStorage.getItem('userRole');
@@ -17,6 +15,19 @@ export default function DailyMaterialDetail() {
   const initialButtonState = userRole === 'promoter' ? '促進劑領料單' : '主膠領料單';
   const [selectedButton, setSelectedButton] = useState(initialButtonState);
 
+  const [showNotesDialog, setShowNotesDialog] = useState(false); // State to control dialog visibility
+  const [selectedNotes, setSelectedNotes] = useState(''); // State to store notes value
+
+  // Function to show the dialog when the icon is clicked
+  const handleIconClick = (notes) => {
+    setSelectedNotes(notes);
+    setShowNotesDialog(true);
+  };
+
+  // Function to close the dialog
+  const closeNotesDialog = () => {
+    setShowNotesDialog(false);
+  };
 
   useEffect(() => {
     if (date) {
@@ -305,15 +316,27 @@ export default function DailyMaterialDetail() {
                                 className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
                               />
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-gray-700">
-                            <input
-                                type="text"
-                                value={material.notes}
-                                onChange={(event) => handleNotesInputChange(material.daily_material_formula_id, event.target.value)}
-                                onBlur={(event) => handleNotesChange(material.daily_material_formula_id, event.target.value)}
-                                className="w-full px-2 py-1 border-b border-indigo-300 focus:outline-none focus:border-indigo-500"
-                                placeholder="..."
-                              />
+                            <td className="flex px-4 py-3 whitespace-nowrap text-gray-700">
+                              <input
+                                  type="text"
+                                  value={material.notes}
+                                  onChange={(event) => handleNotesInputChange(material.daily_material_formula_id, event.target.value)}
+                                  onBlur={(event) => handleNotesChange(material.daily_material_formula_id, event.target.value)}
+                                  className="w-full px-2 py-1 border-b border-indigo-300 focus:outline-none focus:border-indigo-500"
+                                  placeholder="..."
+                                />
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={() => handleIconClick(material.notes)}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                                </svg>
+                                {showNotesDialog && (
+                                  <div className="absolute top-0 right-0 left-0 bottom-0 flex justify-center items-center bg-black bg-opacity-50">
+                                    <div className="bg-white p-4 rounded shadow-md">
+                                      <h3 className="text-lg font-semibold mb-2">Notes</h3>
+                                      <p>{selectedNotes}</p>
+                                      <button className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700" onClick={closeNotesDialog}>Close</button>
+                                    </div>
+                                  </div>
+                                )}
                             </td>
                           </tr>
                         ))
