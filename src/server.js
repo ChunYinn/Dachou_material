@@ -491,6 +491,41 @@ app.put('/update-notes/:id', async (req, res) => {
   }
 });
 
+//get all the Batchnumber for recommendation system
+app.get('/get-chemical-input-detail/:id', async (req, res) => {
+  try {
+    // Extract the chemical raw material id from the request parameters
+    const chemicalRawMaterialId = req.params.id;
+
+    // Create a new MySQL connection
+    const connection = await mysql.createConnection(dbConfig);
+
+    // SQL query to select data from the chemical_individual_input table
+    const sql = `
+      SELECT 
+        chemical_raw_material_batch_no, 
+        chemical_raw_material_id, 
+        input_test_hardness,
+        batch_kg
+      FROM chemical_individual_input
+      WHERE chemical_raw_material_id = ?
+    `;
+
+    // Execute the query with the chemicalRawMaterialId parameter
+    const [rows] = await connection.execute(sql, [chemicalRawMaterialId]);
+
+    // Close the connection
+    await connection.end();
+
+    // Send the data back to the client
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching data:', error.message);
+    res.status(500).send('Error fetching data: ' + error.message);
+  }
+});
+
+
 //-------------膠料基本黨-----------------------------------------------
 // get rubber rile ms.stickness_value,
 app.get('/get-material-info/:materialID', async (req, res) => {
