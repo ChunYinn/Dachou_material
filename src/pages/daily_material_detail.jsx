@@ -16,16 +16,13 @@ export default function DailyMaterialDetail() {
   const [selectedButton, setSelectedButton] = useState(initialButtonState);
 
   const [showNotesDialog, setShowNotesDialog] = useState(false); // State to control dialog visibility
-  const [selectedNotes, setSelectedNotes] = useState(''); // State to store notes value
   const [popOutPosition, setPopOutPosition] = useState({ x: 0, y: 0 });
   const [selectedRowId, setSelectedRowId] = useState(null);
   const [chemicalDetails, setChemicalDetails] = useState([]);
   const [userInputs, setUserInputs] = useState({});
-  
 
   // Function to show the dialog when the icon is clicked
   const handleIconClick = async(chemicalRawMaterialId, materialId, event) => {
-    setSelectedNotes(chemicalRawMaterialId);
     setSelectedRowId(materialId); // Set the ID of the selected row
     const iconRect = event.currentTarget.getBoundingClientRect();
     setPopOutPosition({
@@ -51,6 +48,93 @@ export default function DailyMaterialDetail() {
     setSelectedRowId(null);
   };
 
+  //formate like: HE-R9-30-01-W
+  const validateMaterialID = (id) => {
+    const regex = /^[A-Z]{2}-[A-Z][0-9]-[0-9]{2}-[0-9]{2}-[A-Z]$/;
+    return regex.test(id);
+  };
+
+  // Extract Hardness from Material ID
+  const extractHardnessFromID = (id) => {
+    if (!validateMaterialID(id)) return 0;
+    const parts = id.split('-');
+    const hardness = parseInt(parts[2], 10);
+    return isNaN(hardness) ? 0 : hardness;
+  };
+
+  // Function to fetch chemical input details for a single material ID
+  async function fetchChemicalInputDetails(chemicalRawMaterialId) {
+    try {
+      const response = await axios.get(`http://localhost:5000/get-chemical-input-detail/${chemicalRawMaterialId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching chemical input details:', error);
+      return []; // Return empty array in case of error to keep the data structure consistent
+    }
+  }
+
+  // Assuming groupedData and other utility functions like validateMaterialID, extractHardnessFromID are defined elsewhere
+  const handleCalculateOptimalHardness = async (batchNumber) => {
+    console.log(`Calculating optimal hardness for batch: ${batchNumber}`);
+
+    const batchInfo = groupedData[batchNumber];
+    if (!batchInfo) {
+      console.error(`No data found for batch number: ${batchNumber}`);
+      return;
+    }
+
+    const materialID = batchInfo.material_id;
+    const hardness = validateMaterialID(materialID) ? extractHardnessFromID(materialID) : 0;
+
+    const formulaRequirements = batchInfo.materials.reduce((acc, material) => {
+      const secondLetter = material.chemical_raw_material_id.charAt(1).toUpperCase();
+      if (secondLetter >= 'A' && secondLetter <= 'I') {
+        acc[material.chemical_raw_material_id] = parseFloat(material.usage_kg);
+      }
+      return acc;
+    }, {});
+
+    const uniqueMaterialIDs = Object.keys(formulaRequirements);
+
+    const fetchMaterialDetails = async (id) => {
+      const response = await fetch(`http://localhost:5000/get-chemical-input-detail/${id}`);
+      const data = await response.json();
+      return data.map(detail => ({
+        batchNumber: detail.chemical_raw_material_batch_no,
+        kg: parseFloat(detail.batch_kg),
+        hardness: parseInt(detail.input_test_hardness, 10),
+      }));
+    };
+
+    Promise.all(uniqueMaterialIDs.map(fetchMaterialDetails)).then(materialDetails => {
+      const materials = uniqueMaterialIDs.reduce((acc, id, index) => {
+        acc[id] = materialDetails[index];
+        return acc;
+      }, {});
+
+      // Prepare the request body
+      const requestBody = {
+        materials,
+        formulaRequirements,
+        targetHardness: hardness,
+      };
+
+      console.log('Request body:', requestBody);
+
+      // Send the request to the Node.js server
+      fetch('http://localhost:5000/calculate-optimal-hardness', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      })
+      .then(response => response.json())
+      .then(data => console.log('Calculation result:', data))
+      .catch(error => console.error('Error:', error));
+    });
+  };
+
+
+  //-----------------------------------------------------------------------
   useEffect(() => {
     if (date) {
       axios.get(`http://localhost:5000/get-material-detail/${date}`)
@@ -207,6 +291,10 @@ export default function DailyMaterialDetail() {
 
   // Function to handle button click
   const handleButtonClick = (buttonType) => {
+    if (showNotesDialog) {
+      closeNotesDialog();
+    }
+
     setSelectedButton(buttonType);
   };
 
@@ -267,7 +355,8 @@ export default function DailyMaterialDetail() {
                 ? 'bg-indigo-600 text-white shadow-lg'
                 : 'bg-white hover:bg-indigo-300 text-indigo-800'
             }`}
-            onClick={() => handleButtonClick('促進劑領料單')}
+            onClick={() => handleButtonClick('促進劑領料單')
+            }
           >
             促進劑領料單
           </button>
@@ -289,6 +378,15 @@ export default function DailyMaterialDetail() {
           onChange={handleCollectorInputChange}
           onBlur={handleCollectorInputBlur}
         />
+        {selectedButton === '主膠領料單' && (
+            <button
+              type="button"
+              className="ml-6 inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-bold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+              onClick={() => handleCalculateOptimalHardness("240207-01")}
+            >
+              開始計算最佳硬度
+            </button>
+          )}
       </div>    
   
       {groupedDataEntries.length > 0 ? (
