@@ -401,7 +401,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                   </div>
                   <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
                     <Dialog.Title as="h3" className="text-lg font-bold leading-6 text-gray-900">
-                      新增領料單
+                      {editingMaterial ? '編輯領料單' : '新增領料單'}
                     </Dialog.Title>
                     <div className="mt-9">
                       {editingMaterial ? (
@@ -462,10 +462,11 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                           <input
                             type="text"
                             id="order"
-                            className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-green-600 sm:text-sm sm:leading-6"
+                            className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 ${editingMaterial ? "focus:ring-red-600" : "focus:ring-green-600"}`}
                             placeholder="同天不能重複.."
                             value={order}
                             onChange={(e) => setOrder(e.target.value)}
+                            readOnly={editingMaterial ? true : false}
                           />
                         </div>
                         <div>

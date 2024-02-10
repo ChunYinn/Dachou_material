@@ -23,6 +23,7 @@ export default function DailyMaterialDetail() {
   const [selectedRowId, setSelectedRowId] = useState(null);
   const [chemicalDetails, setChemicalDetails] = useState([]);
   const [userInputs, setUserInputs] = useState({});
+  const [calculationResults, setCalculationResults] = useState({}); // State to store the calculation results 
 
   // Function to show the dialog when the icon is clicked
   const handleIconClick = async(chemicalRawMaterialId, materialId, event) => {
@@ -107,6 +108,17 @@ export default function DailyMaterialDetail() {
       const result = findBestMaterialCombination(materials, formulaRequirements, hardness);
       console.log(result);
 
+      const parsedResult = JSON.parse(result);
+
+      // Update the UI based on the results
+      if (parsedResult.error) {
+        alert(parsedResult.error);
+      } else {
+          setCalculationResults(prevResults => ({
+              ...prevResults,
+              [batchNumber]: parsedResult // Store results keyed by batch number
+          }));
+      }
     });
   };
 
@@ -355,15 +367,6 @@ export default function DailyMaterialDetail() {
           onChange={handleCollectorInputChange}
           onBlur={handleCollectorInputBlur}
         />
-        {selectedButton === '主膠領料單' && (
-            <button
-              type="button"
-              className="ml-6 inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-bold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-              onClick={() => handleCalculateOptimalHardness("240207-01")}
-            >
-              開始計算最佳硬度
-            </button>
-          )}
       </div>    
   
       {groupedDataEntries.length > 0 ? (
@@ -381,10 +384,20 @@ export default function DailyMaterialDetail() {
                   <h3 className="text-lg font-medium">機台: {details.production_machine}</h3>
                   <h3 className="text-lg font-medium">{batchNumber}</h3>
                 </div>
+                
                 <div className="flex justify-between mb-4">
                   <p className="text-lg font-medium">膠料編號: {details.material_id}</p>
                   <p className="text-lg">總生產量: {details.total_demand}</p>
                 </div>
+                {selectedButton === '主膠領料單' && (
+                <button
+                  type="button"
+                  className="mb-2 inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-bold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                  onClick={() => handleCalculateOptimalHardness(batchNumber)}
+                >
+                  計算最佳組合
+                </button>
+                )}
                 <div className="w-full">
                   <table className="min-w-full divide-y divide-gray-200 ">
                     <thead>
@@ -422,9 +435,11 @@ export default function DailyMaterialDetail() {
                                   className="w-full px-2 py-1 border-b border-indigo-300 focus:outline-none focus:border-indigo-500"
                                   placeholder="..."
                                 />
+                              {selectedButton === '主膠領料單' && (
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={(event) => handleIconClick(material.chemical_raw_material_id, material.daily_material_formula_id, event)}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                                 </svg>
+                              )}
                                 {showNotesDialog && (
                                   <div
                                     className="absolute z-50 bg-yellow-100 p-4 rounded shadow-md"
@@ -444,22 +459,27 @@ export default function DailyMaterialDetail() {
                                         </tr>
                                       </thead>
                                       <tbody className="bg-white divide-y divide-gray-200">
-                                        {chemicalDetails.map((detail, index) => (
-                                          <tr key={index}>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_batch_no}</td>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.input_test_hardness}</td>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.batch_kg}</td>
-                                            <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
-                                              <input
-                                                type="number"
-                                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                                value={userInputs[detail.chemical_raw_material_batch_no] || ''}
-                                                onChange={(e) => setUserInputs({ ...userInputs, [detail.chemical_raw_material_batch_no]: e.target.value })}
-                                                placeholder="輸入.."
-                                              />
-                                            </td>
-                                          </tr>
-                                        ))}
+                                        {chemicalDetails.map((detail, index) => {
+                                          // Check if there are calculated results for this batch and chemical
+                                          const batchResults = calculationResults[selectedRowId];
+                                          const chemicalResult = batchResults?.bestCombinationDetails.find(r => r.batchNumber === detail.chemical_raw_material_batch_no);
+                                          return (
+                                            <tr key={index}>
+                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_batch_no}</td>
+                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.input_test_hardness}</td>
+                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.batch_kg}</td>
+                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <input
+                                                  type="number"
+                                                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                  value={chemicalResult ? chemicalResult.kg : userInputs[detail.chemical_raw_material_batch_no] || ''}
+                                                  onChange={(e) => setUserInputs({ ...userInputs, [detail.chemical_raw_material_batch_no]: e.target.value })}
+                                                  placeholder="輸入.."
+                                                />
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
                                       </tbody>
                                     </table>
                                     <div className="mt-4 flex justify-end">
@@ -472,9 +492,9 @@ export default function DailyMaterialDetail() {
                                     </div>
                                   </div>
                                 )}
-
                             </td>
                           </tr>
+                          
                         ))
                       ) : (
                         <tr>
