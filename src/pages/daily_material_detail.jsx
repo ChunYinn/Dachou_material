@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+// In another file where you want to use the above functions
+const { findBestMaterialCombination} = require('./find_material_combination');
+
 
 export default function DailyMaterialDetail() {
   const { date } = useParams();
@@ -62,17 +65,6 @@ export default function DailyMaterialDetail() {
     return isNaN(hardness) ? 0 : hardness;
   };
 
-  // Function to fetch chemical input details for a single material ID
-  async function fetchChemicalInputDetails(chemicalRawMaterialId) {
-    try {
-      const response = await axios.get(`http://localhost:5000/get-chemical-input-detail/${chemicalRawMaterialId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching chemical input details:', error);
-      return []; // Return empty array in case of error to keep the data structure consistent
-    }
-  }
-
   // Assuming groupedData and other utility functions like validateMaterialID, extractHardnessFromID are defined elsewhere
   const handleCalculateOptimalHardness = async (batchNumber) => {
     console.log(`Calculating optimal hardness for batch: ${batchNumber}`);
@@ -112,24 +104,9 @@ export default function DailyMaterialDetail() {
         return acc;
       }, {});
 
-      // Prepare the request body
-      const requestBody = {
-        materials,
-        formulaRequirements,
-        targetHardness: hardness,
-      };
+      const result = findBestMaterialCombination(materials, formulaRequirements, hardness);
+      console.log(result);
 
-      console.log('Request body:', requestBody);
-
-      // Send the request to the Node.js server
-      fetch('http://localhost:5000/calculate-optimal-hardness', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      })
-      .then(response => response.json())
-      .then(data => console.log('Calculation result:', data))
-      .catch(error => console.error('Error:', error));
     });
   };
 

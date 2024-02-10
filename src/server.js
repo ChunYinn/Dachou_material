@@ -1,7 +1,6 @@
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const { spawn } = require('child_process');
 const mysql = require('mysql2/promise');
 const app = express();
 const port = 5000;
@@ -524,38 +523,6 @@ app.get('/get-chemical-input-detail/:id', async (req, res) => {
     console.error('Error fetching data:', error.message);
     res.status(500).send('Error fetching data: ' + error.message);
   }
-});
-
-// Endpoint to calculate optimal hardness
-app.post('/calculate-optimal-hardness', (req, res) => {
-  const { materials, formulaRequirements, targetHardness } = req.body;
-
-  // Prepare arguments for the Python script
-  const args = JSON.stringify({ materials, formulaRequirements, targetHardness });
-  console.log(args);
-
-  const path = require('path');
-  const pythonScriptPath = path.join(__dirname, 'find_material_combination.py');
-  const pythonProcess = spawn('python', [pythonScriptPath, args]);
-
-  pythonProcess.stdout.on('data', (data) => {
-    const output = data.toString();
-    try {
-      const result = JSON.parse(output);
-      res.json(result);
-    } catch (error) {
-      console.error('Error parsing output from Python script:', error);
-      res.status(500).send('Error processing calculation');
-    }
-  });
-
-  pythonProcess.stderr.on('data', (data) => {
-    console.error(`stderr: ${data}`);
-  });
-
-  pythonProcess.on('close', (code) => {
-    console.log(`Python script exited with code ${code}`);
-  });
 });
 
 //-------------膠料基本黨-----------------------------------------------
