@@ -24,6 +24,7 @@ export default function DailyMaterialDetail() {
   const [chemicalDetails, setChemicalDetails] = useState([]);
   const [userInputs, setUserInputs] = useState({});
   const [calculationResults, setCalculationResults] = useState({}); // State to store the calculation results 
+  const [currentHardness, setCurrentHardness] = useState(0); // State to store the current hardness
 
   // Function to show the dialog when the icon is clicked
   const handleIconClick = async(chemicalRawMaterialId, materialId, event) => {
@@ -96,6 +97,7 @@ export default function DailyMaterialDetail() {
         batchNumber: detail.chemical_raw_material_batch_no,
         kg: parseFloat(detail.batch_kg),
         hardness: parseInt(detail.input_test_hardness, 10),
+        position: detail.chemical_raw_material_position,
       }));
     };
 
@@ -108,7 +110,7 @@ export default function DailyMaterialDetail() {
       const result = findBestMaterialCombination(materials, formulaRequirements, hardness);
       console.log(result);
 
-      const parsedResult = JSON.parse(result);
+      const parsedResult = result
 
       // Update the UI based on the results
       if (parsedResult.error) {
@@ -313,6 +315,35 @@ export default function DailyMaterialDetail() {
   //check whether there's data
   const groupedDataEntries = Object.entries(groupedData);
 
+  //----hardness calculation--------------------------------
+  const calculateCurrentHardness = (newInputs) => {
+    let totalKg = 0;
+    let totalHardnessKg = 0;
+  
+    for (const [batchNo, kg] of Object.entries(newInputs)) {
+      const detail = chemicalDetails.find(d => d.chemical_raw_material_batch_no === batchNo);
+      if (detail && kg) {
+        const hardness = parseFloat(detail.input_test_hardness);
+        const kgParsed = parseFloat(kg);
+        if (!isNaN(hardness) && !isNaN(kgParsed)) {
+          totalKg += kgParsed;
+          totalHardnessKg += hardness * kgParsed;
+        }
+      }
+    }
+  
+    return totalKg > 0 ? (totalHardnessKg / totalKg) : 0;
+  };
+
+  const handleUserInputChange = (batchNo, value) => {
+    const newInputs = { ...userInputs, [batchNo]: value };
+    setUserInputs(newInputs);
+    const newCurrentHardness = calculateCurrentHardness(newInputs);
+    setCurrentHardness(newCurrentHardness.toFixed(2)); // Keeping two decimal points for hardness
+  };
+  
+  
+
   return (
     <div className="flex flex-col items-center mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <p className="text-2xl text-indigo-600 font-bold mb-6 mt-12">
@@ -377,7 +408,7 @@ export default function DailyMaterialDetail() {
             );
   
             return (
-              <div key={details.daily_material_formula_id} className="mt-4 p-4 border rounded shadow-sm w-full mx-2 mb-4 max-w-4xl">
+              <div key={details.daily_material_formula_id} className="mt-4 p-4 border rounded shadow-sm w-full mx-2 mb-4 max-w-5xl">
 
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">打料單號 {details.order}</h3>
@@ -385,8 +416,9 @@ export default function DailyMaterialDetail() {
                   <h3 className="text-lg font-medium">{batchNumber}</h3>
                 </div>
                 
-                <div className="flex justify-between mb-4">
+                <div className="flex justify-between items-center mb-4">
                   <p className="text-lg font-medium">膠料編號: {details.material_id}</p>
+                  <p className="text-lg font-medium text-red-600" style={{marginRight:"110px"}}>混合硬度: {currentHardness}</p>
                   <p className="text-lg">總生產量: {details.total_demand}</p>
                 </div>
                 {selectedButton === '主膠領料單' && (
@@ -402,22 +434,32 @@ export default function DailyMaterialDetail() {
                   <table className="min-w-full divide-y divide-gray-200 ">
                     <thead>
                       <tr>
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"120px"}}>化工原料ID</th>
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"120px"}}>化工名稱</th>
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"120px"}}>用量/KG</th>
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"120px"}}>是否完成</th>
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"349px"}}>備註</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"105px"}}>化工原料ID</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>化工名稱</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"120px"}}>推薦批號</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>位子</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>用量/KG</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"50px"}}>是否完成</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"300px"}}>備註</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredMaterials.length > 0 ? (
-                        filteredMaterials.map((material) => (
+                        filteredMaterials.map((material) => {
+
+                          const batchResults = calculationResults[batchNumber];
+                          const materialResult = batchResults ? batchResults.bestCombinationDetails.find(detail => detail.material === material.chemical_raw_material_id) : null;
+
+                          const recommendedBatchNumber = materialResult ? materialResult.batchNumber : "無";
+                          const position = materialResult ? materialResult.position : "無"; // Extract the position
+
+                          return (
                           <tr key={material.daily_material_formula_id} className={`bg-white ${selectedRowId === material.daily_material_formula_id ? 'bg-yellow-100' : ''}`}>
                             <td className="px-4 py-2 whitespace-nowrap text-md text-gray-500">{material.chemical_raw_material_id}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{material.chemical_raw_material_name}</td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                              {material.usage_kg}
-                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{recommendedBatchNumber}</td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{position}</td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{material.usage_kg}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                               <input
                                 type="checkbox"
@@ -427,7 +469,7 @@ export default function DailyMaterialDetail() {
                               />
                             </td>
                             <td className="flex px-4 py-3 whitespace-nowrap text-gray-700">
-                              <input
+                              <textarea
                                   type="text"
                                   value={material.notes}
                                   onChange={(event) => handleNotesInputChange(material.daily_material_formula_id, event.target.value)}
@@ -444,7 +486,7 @@ export default function DailyMaterialDetail() {
                                   <div
                                     className="absolute z-50 bg-yellow-100 p-4 rounded shadow-md"
                                     style={{
-                                      width: '400px',
+                                      width: '460px',
                                       top: popOutPosition.y - 25,
                                       left: popOutPosition.x + 56,
                                     }}
@@ -453,6 +495,7 @@ export default function DailyMaterialDetail() {
                                       <thead>
                                         <tr>
                                           <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">膠料批號</th>
+                                          <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">位置</th>
                                           <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">硬度</th>
                                           <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">剩餘公斤</th>
                                           <th className="relative px-3 py-3 text-sm font-semibold text-gray-900">使用公斤</th>
@@ -466,6 +509,7 @@ export default function DailyMaterialDetail() {
                                           return (
                                             <tr key={index}>
                                               <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_batch_no}</td>
+                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_position}</td>
                                               <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.input_test_hardness}</td>
                                               <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.batch_kg}</td>
                                               <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -473,7 +517,7 @@ export default function DailyMaterialDetail() {
                                                   type="number"
                                                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                                   value={chemicalResult ? chemicalResult.kg : userInputs[detail.chemical_raw_material_batch_no] || ''}
-                                                  onChange={(e) => setUserInputs({ ...userInputs, [detail.chemical_raw_material_batch_no]: e.target.value })}
+                                                  onChange={(e) => handleUserInputChange(detail.chemical_raw_material_batch_no, e.target.value)}
                                                   placeholder="輸入.."
                                                 />
                                               </td>
@@ -494,8 +538,8 @@ export default function DailyMaterialDetail() {
                                 )}
                             </td>
                           </tr>
-                          
-                        ))
+                          );
+                        })
                       ) : (
                         <tr>
                           <td colSpan="5" className="text-center py-10 max-w-4xl">

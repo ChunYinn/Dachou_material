@@ -556,6 +556,7 @@ app.get('/get-chemical-input-detail/:id', async (req, res) => {
       SELECT 
         chemical_raw_material_batch_no, 
         chemical_raw_material_id, 
+        chemical_raw_material_position,
         input_test_hardness,
         batch_kg
       FROM chemical_individual_input

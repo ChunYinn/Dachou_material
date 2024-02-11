@@ -25,9 +25,9 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
 
         if (meetsRequirements) {
             const totalHardness = combination.reduce((total, curr) => 
-                total + (curr.hardness * formulaRequirements[curr.material]), 0
+                total + (curr.hardness * curr.kg), 0 // Note: Changed to use curr.kg for hardness calculation
             );
-            const totalKg = Object.values(formulaRequirements).reduce((total, reqKg) => total + reqKg, 0);
+            const totalKg = Object.values(materialTotals).reduce((total, kg) => total + kg, 0);
             const avgHardness = totalHardness / totalKg;
 
             const diff = Math.abs(avgHardness - targetHardness);
@@ -40,19 +40,22 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
     });
 
     if (bestCombination) {
-        const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness }) => ({
+        // Assumption: position is included in each material detail
+        const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness, position  }) => ({
+            material, // Include the raw material ID
             batchNumber,
             kg: formulaRequirements[material], // Use the kg requirement from formulaRequirements
-            hardness
+            hardness,
+            position,
         }));
-
-        return JSON.stringify({
+    
+        return {
             bestCombinationDetails, 
             minimumHardnessDifference: parseFloat(bestDiff.toFixed(2)), 
-            finalAvgHardness: parseFloat(finalAvgHardness.toFixed(2)) 
-        });
+            finalAvgHardness: parseFloat(finalAvgHardness.toFixed(2))
+        };
     } else {
-        return JSON.stringify({ error: "無法使用單一原料完成, 請自行選取原料" });
+        return { error: "無法使用單一原料完成, 請自行選取原料" };
     }
 }
 
