@@ -21,6 +21,14 @@ export default function MaterialAssign() {
   const [materials, setMaterials] = useState([]); // State to store the materials
   const [editingMaterial, setEditingMaterial] = useState(null);
 
+  // State to store stock status of each material assignment
+  const [stockStatus, setStockStatus] = useState({});
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [chemicalDetails, setChemicalDetails] = useState([]); // This will store the insufficient stock details
+  const [selectedRowId, setSelectedRowId] = useState(null);
+  const [popOutPosition, setPopOutPosition] = useState({ x: 0, y: 0 });
+
+
   // Function to fetch materials
   const fetchMaterials = () => {
     axios.get('http://localhost:5000/get-materials')
@@ -35,6 +43,59 @@ export default function MaterialAssign() {
   useEffect(() => {
     fetchMaterials(); // Fetch materials when the component mounts
   }, []);
+  useEffect(() => {
+    // Fetch stock status for each material after the materials have been fetched and set
+    materials.forEach(material => {
+      fetchStockStatus(material.material_assign_id);
+    });
+  }, [materials]); // Depend on 'materials' to re-run this effect when materials array updates
+
+
+// Function to fetch stock status for a given material assignment
+const fetchStockStatus = (materialAssignId) => {
+  axios.get(`http://localhost:5000/material-stock-status/${materialAssignId}`)
+    .then(response => {
+      // Update the stockStatus state with the new data
+      setStockStatus(prevState => ({
+        ...prevState,
+        [materialAssignId]: response.data
+      }));
+    })
+    .catch(error => {
+      console.error("Error fetching stock status", error);
+    });
+};
+// Function to show the dialog with insufficient stock details
+const handleInsufficientStockClick = async (materialAssignId, event) => {
+  setSelectedRowId(materialAssignId); // Now properly defined
+  const iconRect = event.currentTarget.getBoundingClientRect();
+  setPopOutPosition({ // Now properly defined
+    x: iconRect.left + window.scrollX,
+    y: iconRect.top + window.scrollY,
+  });
+  setShowNotesDialog(true);
+
+  try {
+    const response = await axios.get(`http://localhost:5000/material-stock-status/${materialAssignId}`);
+    if (!response.data.isStockEnough) {
+      setChemicalDetails(response.data.insufficientStockDetails);
+    } else {
+      closeNotesDialog(); // Now properly defined
+    }
+  } catch (error) {
+    console.error('Error fetching insufficient stock details:', error);
+    setChemicalDetails([]);
+  }
+};
+
+
+const closeNotesDialog = () => {
+  setShowNotesDialog(false);
+  setSelectedRowId(null); // Reset selected row ID when closing the dialog
+  // Reset other states if necessary
+};
+
+
 
   // Function to handle adding new material
   const handleAddClick = (assignmentData) => {
@@ -240,6 +301,70 @@ export default function MaterialAssign() {
                               刪除
                             </button>
                           </td>
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
+                            {stockStatus[material.material_assign_id] ? (
+                              stockStatus[material.material_assign_id].isStockEnough ? (
+                                <span className="text-green-600 font-bold">原料充足</span>
+                              ) : (
+                                <button className="text-blue-600 hover:text-blue-900 font-bold" onClick={(event) => handleInsufficientStockClick(material.material_assign_id, event)}>
+                                  原料不足
+                                </button>
+
+                              )
+                            ) : (
+                              <span>Loading...</span> // Show a loading state or similar message while stock status is being fetched
+                            )}
+                            {showNotesDialog && (
+                                <div
+                                className="fixed inset-0 z-10 overflow-y-auto"
+                                style={{
+                                  backgroundColor: 'rgba(0, 0, 0, 0.5)'
+                                }}
+                              >
+                                <div className="flex items-center justify-center min-h-screen">
+                                  <div
+                                    className="bg-white p-5 rounded-lg shadow-lg max-w-lg mx-auto"
+                                    style={{
+                                      top: popOutPosition.y + 'px', // Now properly defined
+                                      left: popOutPosition.x + 'px', // Now properly defined
+                                    }}
+                                  >
+                                  <table className="min-w-full divide-y divide-gray-300">
+                                    {/* Adjust table headers based on your data structure */}
+                                    <thead>
+                                      <tr>
+                                        <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">化工原料 ID</th>
+                                        <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">化工原料 名稱</th>
+                                        <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">需使用公斤數</th>
+                                        <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">目前公斤數</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                      {chemicalDetails.map((detail, index) => (
+                                        <tr key={index}>
+                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_id}</td>
+                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_name}</td>
+                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.usage_kg}</td>
+                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_current_stock}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                  <div className="mt-4 flex justify-end">
+                              <button
+                                onClick={closeNotesDialog} // Now properly defined
+                                className="..."
+                              >
+                                Close
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                          </td>
+
                         </tr>
                       ))
                     ) : (

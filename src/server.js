@@ -73,6 +73,57 @@ app.get('/get-materials', async (req, res) => {
   }
 });
 
+app.get('/material-stock-status/:materialAssignId', async (req, res) => {
+  const { materialAssignId } = req.params; // Get materialAssignId from URL parameters
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    // First SQL query to check if stock is enough for all materials
+    const sqlIsStockEnough = `
+      SELECT
+        CASE
+          WHEN SUM(CASE WHEN cs.chemical_raw_material_current_stock >= dmf.usage_kg THEN 0 ELSE 1 END) = 0 THEN TRUE
+          ELSE FALSE
+        END AS is_stock_enough
+      FROM
+        daily_material_formula dmf
+        INNER JOIN chemical_stocks cs ON dmf.chemical_raw_material_id = cs.chemical_raw_material_id
+      WHERE
+        dmf.material_assign_id = ?`;
+    const [isStockEnoughResult] = await connection.execute(sqlIsStockEnough, [materialAssignId]);
+
+    // Second SQL query to get details of materials with insufficient stock
+    const sqlInsufficientStockDetails = `
+    SELECT
+        dmf.chemical_raw_material_id,
+        rrmf.chemical_raw_material_name, -- This line fetches the material name from the joined table
+        dmf.usage_kg,
+        cs.chemical_raw_material_current_stock
+    FROM
+        daily_material_formula dmf
+        INNER JOIN chemical_stocks cs ON dmf.chemical_raw_material_id = cs.chemical_raw_material_id
+        INNER JOIN rubber_raw_material_file rrmf ON dmf.chemical_raw_material_id = rrmf.chemical_raw_material_id -- Join with rubber_raw_material_file
+    WHERE
+        dmf.material_assign_id = ?
+        AND (cs.chemical_raw_material_current_stock < dmf.usage_kg OR cs.chemical_raw_material_current_stock IS NULL);
+    `;
+    const [insufficientStockDetails] = await connection.execute(sqlInsufficientStockDetails, [materialAssignId]);
+
+    await connection.end();
+
+    // Structure the response to include both query results
+    res.json({
+      isStockEnough: isStockEnoughResult[0].is_stock_enough,
+      insufficientStockDetails
+    });
+  } catch (error) {
+    console.error('Error fetching material stock status:', error.message);
+    res.status(500).send('Error fetching material stock status');
+  }
+});
+
+
 
 app.post('/assign-material', async (req, res) => {
   try {
