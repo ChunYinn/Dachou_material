@@ -302,18 +302,18 @@ const closeNotesDialog = () => {
                             </button>
                           </td>
                           <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right font-medium">
-                            {stockStatus[material.material_assign_id] ? (
-                              stockStatus[material.material_assign_id].isStockEnough ? (
-                                <span className="text-green-600 font-bold">原料充足</span>
-                              ) : (
-                                <button className="text-blue-600 hover:text-blue-900 font-bold" onClick={(event) => handleInsufficientStockClick(material.material_assign_id, event)}>
-                                  原料不足
-                                </button>
-
-                              )
-                            ) : (
-                              <span>Loading...</span> // Show a loading state or similar message while stock status is being fetched
-                            )}
+                          {
+                            // Check if production_date is from yesterday or earlier
+                            new Date(material.production_date) < new Date(new Date().setDate(new Date().getDate() - 1))
+                            ? <span className="text-gray-600 font-bold">歷史紀錄</span> // Display "歷史紀錄" for past records
+                            : stockStatus[material.material_assign_id] // Check stock status for current and future records
+                              ? (
+                                  stockStatus[material.material_assign_id].isStockEnough
+                                  ? <span className="text-green-600 font-bold">原料充足</span>
+                                  : <button className="text-blue-600 hover:text-blue-900 font-bold" onClick={(event) => handleInsufficientStockClick(material.material_assign_id, event)}>原料不足</button>
+                                )
+                              : <span>Loading...</span> // Show a loading state while stock status is being fetched
+                          }
                             {showNotesDialog && (
                                 <div
                                 className="fixed inset-0 z-10 overflow-y-auto"
@@ -336,7 +336,7 @@ const closeNotesDialog = () => {
                                         <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">化工原料 ID</th>
                                         <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">化工原料 名稱</th>
                                         <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">需使用公斤數</th>
-                                        <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">目前公斤數</th>
+                                        <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">目前公斤數-預計打料</th>
                                       </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -345,7 +345,7 @@ const closeNotesDialog = () => {
                                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_id}</td>
                                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_name}</td>
                                           <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.usage_kg}</td>
-                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_current_stock}</td>
+                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.effective_stock}</td>
                                         </tr>
                                       ))}
                                     </tbody>
