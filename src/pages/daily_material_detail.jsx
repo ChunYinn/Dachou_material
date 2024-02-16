@@ -24,7 +24,7 @@ export default function DailyMaterialDetail() {
   const [chemicalDetails, setChemicalDetails] = useState([]);
   const [userInputs, setUserInputs] = useState({});
   const [calculationResults, setCalculationResults] = useState({}); // State to store the calculation results 
-  const [currentHardness, setCurrentHardness] = useState(0); // State to store the current hardness
+  const [currentHardness, setCurrentHardness] = useState({}); // State to store the current hardness
 
   // Function to show the dialog when the icon is clicked
   const handleIconClick = async(chemicalRawMaterialId, materialId, event) => {
@@ -335,15 +335,17 @@ export default function DailyMaterialDetail() {
     return totalKg > 0 ? (totalHardnessKg / totalKg) : 0;
   };
 
-  const handleUserInputChange = (batchNo, value) => {
-    const newInputs = { ...userInputs, [batchNo]: value };
+  const handleUserInputChange = (rawMaterialBatchNo, value, batchNumber) => {
+    const newInputs = { ...userInputs, [rawMaterialBatchNo]: value };
     setUserInputs(newInputs);
-    const newCurrentHardness = calculateCurrentHardness(newInputs);
-    setCurrentHardness(newCurrentHardness.toFixed(2)); // Keeping two decimal points for hardness
-  };
   
+    const newCurrentHardness = calculateCurrentHardness(newInputs, rawMaterialBatchNo);
+    setCurrentHardness(prevHardness => ({
+      ...prevHardness,
+      [batchNumber]: newCurrentHardness.toFixed(2) // Keeping two decimal points for hardness
+    }));
+  };  
   
-
   return (
     <div className="flex flex-col items-center mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <p className="text-2xl text-indigo-600 font-bold mb-6 mt-12">
@@ -418,7 +420,7 @@ export default function DailyMaterialDetail() {
                 
                 <div className="flex justify-between items-center mb-4">
                   <p className="text-lg font-medium">膠料編號: {details.material_id}</p>
-                  <p className="text-lg font-medium text-red-600" style={{marginRight:"110px"}}>混合硬度: {currentHardness}</p>
+                  <p className="text-lg font-medium text-red-600" style={{marginRight:"110px"}}>混合硬度: {currentHardness[batchNumber] || 0}</p>
                   <p className="text-lg">總生產量: {details.total_demand}</p>
                 </div>
                 {selectedButton === '主膠領料單' && (
@@ -517,7 +519,7 @@ export default function DailyMaterialDetail() {
                                                   type="number"
                                                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                                   value={chemicalResult ? chemicalResult.kg : userInputs[detail.chemical_raw_material_batch_no] || ''}
-                                                  onChange={(e) => handleUserInputChange(detail.chemical_raw_material_batch_no, e.target.value)}
+                                                  onChange={(e) => handleUserInputChange(detail.chemical_raw_material_batch_no, e.target.value, batchNumber)}
                                                   placeholder="輸入.."
                                                 />
                                               </td>
