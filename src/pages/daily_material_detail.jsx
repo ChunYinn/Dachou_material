@@ -464,8 +464,15 @@ export default function DailyMaterialDetail() {
                               <input
                                 type="checkbox"
                                 checked={material.collecting_status}
-                                onChange={() => handleCheckboxChange(material.daily_material_formula_id, material.collecting_status)}
+                                onChange={() => {
+                                  // Only call handleCheckboxChange if collecting_status is currently false
+                                  if (!material.collecting_status) {
+                                    handleCheckboxChange(material.daily_material_formula_id, material.collecting_status);
+                                  }
+                                }}
                                 className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                                // Optionally, disable the checkbox once it is checked to visually indicate that it can't be changed
+                                disabled={material.collecting_status}
                               />
                             </td>
                             <td className="flex px-4 py-3 whitespace-nowrap text-gray-700">
