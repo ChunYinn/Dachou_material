@@ -82,59 +82,58 @@ app.get('/material-stock-status/:materialAssignId', async (req, res) => {
     // First SQL query to check if stock is enough for all materials
     const sqlIsStockEnough = `
     SELECT
-      CASE
-        WHEN SUM(CASE WHEN (cs.chemical_raw_material_current_stock - COALESCE(cdo.total_output_kg, 0)) >= dmf.usage_kg THEN 0 ELSE 1 END) = 0 THEN TRUE
-        ELSE FALSE
-      END AS is_stock_enough
+        CASE
+            WHEN SUM(CASE WHEN (cs.chemical_raw_material_current_stock - COALESCE(total_output.total_usage_kg, 0)) >= dmf.usage_kg THEN 0 ELSE 1 END) = 0 THEN TRUE
+            ELSE FALSE
+        END AS is_stock_enough
     FROM
-      daily_material_formula dmf
-      INNER JOIN chemical_stocks cs ON dmf.chemical_raw_material_id = cs.chemical_raw_material_id
-      INNER JOIN material_assignments ma ON dmf.material_assign_id = ma.material_assign_id
-      LEFT JOIN (
-        SELECT
-          dmf2.chemical_raw_material_id,
-          SUM(cdo.output_kg) AS total_output_kg
-        FROM
-          chemical_daily_output cdo
-          INNER JOIN daily_material_formula dmf2 ON cdo.daily_material_formula_id = dmf2.daily_material_formula_id
-          INNER JOIN material_assignments ma2 ON dmf2.material_assign_id = ma2.material_assign_id
-        WHERE
-          ma2.production_date >= CURDATE() - INTERVAL 1 DAY
-        GROUP BY
-          dmf2.chemical_raw_material_id
-      ) cdo ON cs.chemical_raw_material_id = cdo.chemical_raw_material_id
+        daily_material_formula dmf
+        INNER JOIN chemical_stocks cs ON dmf.chemical_raw_material_id = cs.chemical_raw_material_id
+        INNER JOIN material_assignments ma ON dmf.material_assign_id = ma.material_assign_id
+        LEFT JOIN (
+            SELECT
+                dmf2.chemical_raw_material_id,
+                SUM(dmf2.usage_kg) AS total_usage_kg
+            FROM
+                daily_material_formula dmf2
+                INNER JOIN material_assignments ma2 ON dmf2.material_assign_id = ma2.material_assign_id
+            WHERE
+                ma2.production_date >= CURDATE() - INTERVAL 1 DAY
+            GROUP BY
+                dmf2.chemical_raw_material_id
+        ) total_output ON cs.chemical_raw_material_id = total_output.chemical_raw_material_id
     WHERE
-      dmf.material_assign_id = ?;
+        dmf.material_assign_id = ?;
+
   `;
     const [isStockEnoughResult] = await connection.execute(sqlIsStockEnough, [materialAssignId]);
 
     // Second SQL query to get details of materials with insufficient stock
     const sqlInsufficientStockDetails = `
     SELECT
-      dmf.chemical_raw_material_id,
-      rrmf.chemical_raw_material_name,
-      dmf.usage_kg,
-      cs.chemical_raw_material_current_stock - IFNULL(cdo.total_output_kg, 0) AS effective_stock  -- Using IFNULL for clarity
+        dmf.chemical_raw_material_id,
+        rrmf.chemical_raw_material_name,
+        dmf.usage_kg,
+        cs.chemical_raw_material_current_stock - IFNULL(total_output.total_usage_kg, 0) AS effective_stock
     FROM
-      daily_material_formula dmf
-      INNER JOIN chemical_stocks cs ON dmf.chemical_raw_material_id = cs.chemical_raw_material_id
-      INNER JOIN rubber_raw_material_file rrmf ON dmf.chemical_raw_material_id = rrmf.chemical_raw_material_id
-      LEFT JOIN (
-        SELECT
-          dmf2.chemical_raw_material_id,
-          SUM(cdo.output_kg) AS total_output_kg
-        FROM
-          chemical_daily_output cdo
-          INNER JOIN daily_material_formula dmf2 ON cdo.daily_material_formula_id = dmf2.daily_material_formula_id
-          INNER JOIN material_assignments ma ON dmf2.material_assign_id = ma.material_assign_id
-        WHERE
-          ma.production_date >= CURDATE() - INTERVAL 1 DAY
-        GROUP BY
-          dmf2.chemical_raw_material_id
-      ) cdo ON dmf.chemical_raw_material_id = cdo.chemical_raw_material_id
+        daily_material_formula dmf
+        INNER JOIN chemical_stocks cs ON dmf.chemical_raw_material_id = cs.chemical_raw_material_id
+        INNER JOIN rubber_raw_material_file rrmf ON dmf.chemical_raw_material_id = rrmf.chemical_raw_material_id
+        LEFT JOIN (
+            SELECT
+                dmf2.chemical_raw_material_id,
+                SUM(dmf2.usage_kg) AS total_usage_kg
+            FROM
+                daily_material_formula dmf2
+                INNER JOIN material_assignments ma ON dmf2.material_assign_id = ma.material_assign_id
+            WHERE
+                ma.production_date >= CURDATE() - INTERVAL 1 DAY
+            GROUP BY
+                dmf2.chemical_raw_material_id
+        ) total_output ON dmf.chemical_raw_material_id = total_output.chemical_raw_material_id
     WHERE
-      dmf.material_assign_id = ?
-      AND (cs.chemical_raw_material_current_stock - IFNULL(cdo.total_output_kg, 0) < dmf.usage_kg OR cs.chemical_raw_material_current_stock IS NULL);
+        dmf.material_assign_id = ?
+        AND (cs.chemical_raw_material_current_stock - IFNULL(total_output.total_usage_kg, 0) < dmf.usage_kg OR cs.chemical_raw_material_current_stock IS NULL);
     `;
     const [insufficientStockDetails] = await connection.execute(sqlInsufficientStockDetails, [materialAssignId]);
 
