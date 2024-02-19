@@ -2,7 +2,7 @@ function cartesianProduct(arr) {
     return arr.reduce((a, b) => a.flatMap(d => b.map(e => [...d, e])), [[]]);
 }
 
-function findBestMaterialCombination(materials, formulaRequirements, targetHardness) {
+function findBestMaterialCombination(materials, formulaRequirements, targetHardness, batchNumber) {
     const validMaterialOptions = Object.keys(materials).map(material => 
         materials[material].map(option => ({ material, ...option }))
     );
@@ -52,7 +52,8 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
         return {
             bestCombinationDetails, 
             minimumHardnessDifference: parseFloat(bestDiff.toFixed(2)), 
-            finalAvgHardness: parseFloat(finalAvgHardness.toFixed(2))
+            finalAvgHardness: parseFloat(finalAvgHardness.toFixed(2)),
+            materialbBatchNumber: batchNumber
         };
     } else {
         return { error: "無法使用單一原料完成, 請自行選取原料" };

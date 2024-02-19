@@ -21,13 +21,18 @@ export default function DailyMaterialDetail() {
   const [showNotesDialog, setShowNotesDialog] = useState(false); // State to control dialog visibility
   const [popOutPosition, setPopOutPosition] = useState({ x: 0, y: 0 });
   const [selectedRowId, setSelectedRowId] = useState(null);
+  const [selectedBatchNumber, setSelectedBatchNumber] = useState('');
+  const [activeMaterialId, setActiveMaterialId] = useState('');
   const [chemicalDetails, setChemicalDetails] = useState([]);
   const [userInputs, setUserInputs] = useState({});
   const [calculationResults, setCalculationResults] = useState({}); // State to store the calculation results 
   const [currentHardness, setCurrentHardness] = useState({}); // State to store the current hardness
 
   // Function to show the dialog when the icon is clicked
-  const handleIconClick = async(chemicalRawMaterialId, materialId, event) => {
+  const handleIconClick = async(batchNumber, chemicalRawMaterialId, materialId, event) => {
+    setSelectedBatchNumber(batchNumber);
+    setActiveMaterialId(materialId);
+    console.log('Icon clicked:', batchNumber, chemicalRawMaterialId, materialId);
     setSelectedRowId(materialId); // Set the ID of the selected row
     const iconRect = event.currentTarget.getBoundingClientRect();
     setPopOutPosition({
@@ -45,7 +50,6 @@ export default function DailyMaterialDetail() {
       setChemicalDetails([]);
     }
   };  
-  
   
   // Function to close the dialog
   const closeNotesDialog = () => {
@@ -78,7 +82,8 @@ export default function DailyMaterialDetail() {
     }
 
     const materialID = batchInfo.material_id;
-    const hardness = validateMaterialID(materialID) ? extractHardnessFromID(materialID) : 0;
+    console.log('Material ID:', materialID);
+    const hardness = validateMaterialID(materialID) ? extractHardnessFromID(materialID) : 0.00;
 
     const formulaRequirements = batchInfo.materials.reduce((acc, material) => {
       const secondLetter = material.chemical_raw_material_id.charAt(1).toUpperCase();
@@ -107,7 +112,7 @@ export default function DailyMaterialDetail() {
         return acc;
       }, {});
 
-      const result = findBestMaterialCombination(materials, formulaRequirements, hardness);
+      const result = findBestMaterialCombination(materials, formulaRequirements, hardness, batchNumber);
       console.log(result);
 
       const parsedResult = result
@@ -116,15 +121,87 @@ export default function DailyMaterialDetail() {
       if (parsedResult.error) {
         alert(parsedResult.error);
       } else {
-          setCalculationResults(prevResults => ({
-              ...prevResults,
-              [batchNumber]: parsedResult // Store results keyed by batch number
-          }));
+        console.log('Best combination:', parsedResult.bestCombinationDetails);
+        updateMaterialsBatchNumber(batchNumber, result.bestCombinationDetails);
+
+        //store the recommended batch number in the database
+        result.bestCombinationDetails.forEach(async (detail) => {
+          await updateRecommendedBatchNumberInDatabase(findDailyMaterialFormulaId(batchNumber, detail.material), detail.batchNumber);
+        });
+
+        // Map over parsedResult.bestCombinationDetails to update userInputs
+          const newInputsForBatch = parsedResult.bestCombinationDetails.reduce((acc, detail) => {
+            if (!acc[detail.material]) acc[detail.material] = {};
+            acc[detail.material][detail.batchNumber] = detail.kg.toString();
+            return acc;
+        }, {});
+
+        setUserInputs(prevInputs => ({
+            ...prevInputs,
+            [batchNumber]: newInputsForBatch // Update inputs for this batch
+        }));
+
+        setCalculationResults(prevResults => ({
+          ...prevResults,
+          [batchNumber]: parsedResult
+        }));
+
+        setCurrentHardness(prevHardness => ({
+          ...prevHardness,
+          [batchNumber]: parsedResult.finalAvgHardness.toFixed(2) // Keeping two decimal points for hardness
+        }));
       }
+
+      console.log('User inputs:', userInputs);
     });
   };
 
+  //update recommended batch number in the groupedData state
+  const updateMaterialsBatchNumber = (batchNumber, bestCombinationDetails) => {
+    setGroupedData(prevData => {
+      const newData = { ...prevData };
+      if (newData[batchNumber]) {
+        newData[batchNumber].materials = newData[batchNumber].materials.map(material => {
+          // Find the corresponding update details for this material
+          const update = bestCombinationDetails.find(detail => detail.material === material.chemical_raw_material_id);
+          if (update) {
+            // Update the material with new batch number and position
+            return { 
+              ...material, 
+              rec_chemical_raw_material_batch_no: update.batchNumber,
+              position: update.position // Assuming 'position' is the key where position data is stored
+            };
+          }
+          return material;
+        });
+      }
+      return newData;
+    });
+  };
+  
+  //for finding the row id (daily_material_formula_id)
+  const findDailyMaterialFormulaId = (batchNumber, chemicalRawMaterialId) => {
+    const batchData = groupedData[batchNumber];
+  
+    if (batchData && batchData.materials) {
+      const material = batchData.materials.find(material => material.chemical_raw_material_id === chemicalRawMaterialId);
+      if (material) {
+        return material.daily_material_formula_id; // Return the found daily_material_formula_id
+      }
+    }
+  
+    return null; // Return null if no matching material is found
+  };
 
+  const updateRecommendedBatchNumberInDatabase = async (materialId, recBatchNo) => {
+    try {
+      const response = await axios.put(`http://localhost:5000/update-recommended-batch/${materialId}`, { recBatchNo });
+      console.log('Update response:', response.data);
+    } catch (error) {
+      console.error('Error updating recommended batch number:', error);
+    }
+  };
+  
   //-----------------------------------------------------------------------
   useEffect(() => {
     if (date) {
@@ -147,6 +224,8 @@ export default function DailyMaterialDetail() {
               daily_material_formula_id: curr.daily_material_formula_id,
               chemical_raw_material_id: curr.chemical_raw_material_id,
               chemical_raw_material_name: curr.chemical_raw_material_name,
+              rec_chemical_raw_material_batch_no: curr.rec_chemical_raw_material_batch_no,
+              position: curr.chemical_raw_material_position,
               usage_kg: curr.usage_kg,
               collecting_status: !!curr.collecting_finished,
               notes: curr.notes || ''
@@ -278,9 +357,10 @@ export default function DailyMaterialDetail() {
   const handleNotesInputChange = (materialId, newNotes) => {
     updateNotesInGroupedData(materialId, newNotes);
   };
-  //------------------------------------------------------------
+  //------handle recommendation batch change------------------------------------------------------
 
-  // Function to handle button click
+
+  // Function to handle button click-----------------------------------
   const handleButtonClick = (buttonType) => {
     if (showNotesDialog) {
       closeNotesDialog();
@@ -316,36 +396,70 @@ export default function DailyMaterialDetail() {
   const groupedDataEntries = Object.entries(groupedData);
 
   //----hardness calculation--------------------------------
-  const calculateCurrentHardness = (newInputs) => {
+  const recalculateHardnessForBatch = (batchNumber) => {
     let totalKg = 0;
     let totalHardnessKg = 0;
   
-    for (const [batchNo, kg] of Object.entries(newInputs)) {
-      const detail = chemicalDetails.find(d => d.chemical_raw_material_batch_no === batchNo);
-      if (detail && kg) {
-        const hardness = parseFloat(detail.input_test_hardness);
-        const kgParsed = parseFloat(kg);
-        if (!isNaN(hardness) && !isNaN(kgParsed)) {
-          totalKg += kgParsed;
-          totalHardnessKg += hardness * kgParsed;
-        }
-      }
+    // Check if the batchNumber exists in updatedInputs, if not, set initial hardness to 0
+    if (!userInputs[batchNumber]) {
+      setCurrentHardness(prevHardness => ({
+        ...prevHardness,
+        [batchNumber]: "0.00" // Initialize to "0.00" if batchNumber is undefined
+      }));
+      return; // Exit the function early
     }
   
-    return totalKg > 0 ? (totalHardnessKg / totalKg) : 0;
-  };
-
-  const handleUserInputChange = (rawMaterialBatchNo, value, batchNumber) => {
-    const newInputs = { ...userInputs, [rawMaterialBatchNo]: value };
-    setUserInputs(newInputs);
+    // Proceed if batchNumber exists
+    Object.entries(userInputs[batchNumber]).forEach(([chemicalId, batches]) => {
+      Object.entries(batches).forEach(([batchNo, kg]) => {
+        const kgParsed = parseFloat(kg);
+        const chemical = chemicalDetails.find(d => d.chemical_raw_material_batch_no === batchNo);
+        if (chemical && !isNaN(kgParsed)) {
+          totalKg += kgParsed;
+          totalHardnessKg += chemical.input_test_hardness * kgParsed;
+        }
+      });
+    });
   
-    const newCurrentHardness = calculateCurrentHardness(newInputs, rawMaterialBatchNo);
+    const newHardness = totalKg > 0 ? totalHardnessKg / totalKg : 0;
     setCurrentHardness(prevHardness => ({
       ...prevHardness,
-      [batchNumber]: newCurrentHardness.toFixed(2) // Keeping two decimal points for hardness
+      [batchNumber]: newHardness.toFixed(2) // Keeping two decimal points for hardness
     }));
-  };  
+  };
   
+
+  // Remove the recalculateHardnessForBatch call from handleUserInputChange
+  const handleUserInputChange = async (batchNumber, materialId, batchNo, value) => {
+  
+    // Update the frontend state as before
+    setUserInputs(prevInputs => {
+      const updatedInputs = { ...prevInputs };
+      if (!updatedInputs[batchNumber]) updatedInputs[batchNumber] = {};
+      if (!updatedInputs[batchNumber][materialId]) updatedInputs[batchNumber][materialId] = {};
+      updatedInputs[batchNumber][materialId][batchNo] = value;
+      return updatedInputs;
+    });
+  
+    // Now, call the backend to update the database
+    try {
+      const response = await axios.post('http://localhost:5000/update-output-in-popout', {
+        daily_material_formula_id: activeMaterialId,
+        chemical_raw_material_batch_no: batchNo,
+        output_kg: value,
+      });
+      console.log('Backend response:', response.data);
+    } catch (error) {
+      console.error('Error updating output information:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedBatchNumber) { // Ensure there is a selected batch number
+      recalculateHardnessForBatch(selectedBatchNumber);
+    }
+  }, [userInputs, selectedBatchNumber, chemicalDetails]); // Dependencies array
+
   return (
     <div className="flex flex-col items-center mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <p className="text-2xl text-indigo-600 font-bold mb-6 mt-12">
@@ -401,16 +515,20 @@ export default function DailyMaterialDetail() {
           onBlur={handleCollectorInputBlur}
         />
       </div>    
-  
+      {/* ${!showNotesDialog && 'justify-center'} */}
       {groupedDataEntries.length > 0 ? (
-        <div className={`flex flex-wrap ${!showNotesDialog && 'justify-center'} -mx-2 w-full mb-24`}>
+        <div className={`flex flex-wrap -mx-2 w-full mb-24 ${selectedButton !== '主膠領料單' && 'justify-center'}`}>
           {groupedDataEntries.map(([batchNumber, details]) => {
             const filteredMaterials = details.materials.filter((material) =>
               shouldDisplayMaterial(material.chemical_raw_material_id, selectedButton)
             );
+
+            const disableCalculateButton = details.materials.some(material =>
+              shouldDisplayMaterial(material.chemical_raw_material_id, '主膠領料單') && material.collecting_status
+            );
   
             return (
-              <div key={details.daily_material_formula_id} className="mt-4 p-4 border rounded shadow-sm w-full mx-2 mb-4 max-w-5xl">
+              <div key={details.daily_material_formula_id} className="mt-4 p-4 border rounded shadow-sm w-full mx-2 mb-4" style={{maxWidth:"60rem"}}>
 
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">打料單號 {details.order}</h3>
@@ -425,6 +543,7 @@ export default function DailyMaterialDetail() {
                 </div>
                 {selectedButton === '主膠領料單' && (
                 <button
+                  disabled={disableCalculateButton}
                   type="button"
                   className="mb-2 inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-bold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                   onClick={() => handleCalculateOptimalHardness(batchNumber)}
@@ -438,8 +557,12 @@ export default function DailyMaterialDetail() {
                       <tr>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"105px"}}>化工原料ID</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>化工名稱</th>
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"120px"}}>推薦批號</th>
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>位子</th>
+                        {selectedButton === '主膠領料單' && (
+                          <>
+                            <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"120px"}}>推薦批號</th>
+                            <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>位子</th>
+                          </>
+                        )}
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>用量/KG</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"50px"}}>是否完成</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"300px"}}>備註</th>
@@ -449,18 +572,17 @@ export default function DailyMaterialDetail() {
                       {filteredMaterials.length > 0 ? (
                         filteredMaterials.map((material) => {
 
-                          const batchResults = calculationResults[batchNumber];
-                          const materialResult = batchResults ? batchResults.bestCombinationDetails.find(detail => detail.material === material.chemical_raw_material_id) : null;
-
-                          const recommendedBatchNumber = materialResult ? materialResult.batchNumber : "無";
-                          const position = materialResult ? materialResult.position : "無"; // Extract the position
-
                           return (
                           <tr key={material.daily_material_formula_id} className={`bg-white ${selectedRowId === material.daily_material_formula_id ? 'bg-yellow-100' : ''}`}>
                             <td className="px-4 py-2 whitespace-nowrap text-md text-gray-500">{material.chemical_raw_material_id}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{material.chemical_raw_material_name}</td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{recommendedBatchNumber}</td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{position}</td>
+                            {selectedButton === '主膠領料單' && (
+                              <>  
+                                {/* recommendedBatchNumber  */}
+                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{material.rec_chemical_raw_material_batch_no || '無'}</td>
+                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{material.position || '無'}</td>
+                              </>
+                            )}
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{material.usage_kg}</td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                               <input
@@ -478,9 +600,10 @@ export default function DailyMaterialDetail() {
                                   onBlur={(event) => handleNotesChange(material.daily_material_formula_id, event.target.value)}
                                   className="w-full px-2 py-1 border-b border-indigo-300 focus:outline-none focus:border-indigo-500"
                                   placeholder="..."
+                                  rows="1"
                                 />
                               {selectedButton === '主膠領料單' && (
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={(event) => handleIconClick(material.chemical_raw_material_id, material.daily_material_formula_id, event)}>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={(event) => handleIconClick(batchNumber, material.chemical_raw_material_id, material.daily_material_formula_id, event)}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                                 </svg>
                               )}
@@ -505,9 +628,12 @@ export default function DailyMaterialDetail() {
                                       </thead>
                                       <tbody className="bg-white divide-y divide-gray-200">
                                         {chemicalDetails.map((detail, index) => {
-                                          // Check if there are calculated results for this batch and chemical
-                                          const batchResults = calculationResults[selectedRowId];
-                                          const chemicalResult = batchResults?.bestCombinationDetails.find(r => r.batchNumber === detail.chemical_raw_material_batch_no);
+                                          
+                                          const isCollectingFinished = groupedData[selectedBatchNumber]?.materials.find(material =>
+                                            material.chemical_raw_material_id === detail.chemical_raw_material_id && shouldDisplayMaterial(material.chemical_raw_material_id, '主膠領料單')
+                                          )?.collecting_status;
+                                          const displayKg = userInputs[selectedBatchNumber]?.[material.chemical_raw_material_id]?.[detail.chemical_raw_material_batch_no] || '';
+
                                           return (
                                             <tr key={index}>
                                               <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_batch_no}</td>
@@ -517,9 +643,14 @@ export default function DailyMaterialDetail() {
                                               <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <input
                                                   type="number"
+                                                  disabled={isCollectingFinished}
                                                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                                  value={chemicalResult ? chemicalResult.kg : userInputs[detail.chemical_raw_material_batch_no] || ''}
-                                                  onChange={(e) => handleUserInputChange(detail.chemical_raw_material_batch_no, e.target.value, batchNumber)}
+                                                  value={displayKg}
+                                                  onChange={(e) => {
+                                                    // Prevent negative numbers
+                                                    const value = Math.max(0, e.target.valueAsNumber);
+                                                    handleUserInputChange(selectedBatchNumber, material.chemical_raw_material_id, detail.chemical_raw_material_batch_no, value.toString());
+                                                  }}
                                                   placeholder="輸入.."
                                                 />
                                               </td>

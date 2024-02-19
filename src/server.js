@@ -439,13 +439,17 @@ app.get('/get-material-detail/:date', async (req, res) => {
     dmf.usage_kg,
     ma.batch_number,
     dmf.collecting_finished,
-    dmf.notes
+    dmf.notes,
+    dmf.rec_chemical_raw_material_batch_no,
+    cii.chemical_raw_material_position
     FROM 
         daily_material_formula dmf
     JOIN 
         material_assignments ma ON dmf.material_assign_id = ma.material_assign_id
     JOIN 
         rubber_raw_material_file rrmf ON dmf.chemical_raw_material_id = rrmf.chemical_raw_material_id
+    LEFT JOIN -- Used LEFT JOIN to ensure all rows from dmf are returned, even if there's no matching row in cii
+        chemical_individual_input cii ON dmf.rec_chemical_raw_material_batch_no = cii.chemical_raw_material_batch_no
     WHERE 
         ma.batch_number LIKE CONCAT(?, '%')
     ORDER BY 
@@ -604,6 +608,90 @@ app.get('/get-chemical-input-detail/:id', async (req, res) => {
     res.status(500).send('Error fetching data: ' + error.message);
   }
 });
+
+//update the popout value and store in the database
+app.post('/update-output-in-popout', async (req, res) => {
+  const { daily_material_formula_id, chemical_raw_material_batch_no, output_kg } = req.body;
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `
+      INSERT INTO chemical_daily_output (daily_material_formula_id, chemical_raw_material_batch_no, output_kg)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE output_kg = VALUES(output_kg);
+    `;
+    const values = [daily_material_formula_id, chemical_raw_material_batch_no, output_kg];
+
+    const [result] = await connection.execute(sql, values);
+    await connection.end();
+
+    if (result.affectedRows > 0) {
+      res.send({ message: 'Output information updated successfully', affectedRows: result.affectedRows });
+    } else {
+      res.status(404).send({ message: 'Record not found' });
+    }
+  } catch (error) {
+    console.error('Error updating output information:', error);
+    res.status(500).send('Error updating output information');
+  }
+});
+
+// Backend: Update recommended batch number
+app.put('/update-recommended-batch/:id', async (req, res) => {
+  const { id } = req.params; // daily_material_formula_id
+  const { recBatchNo } = req.body; // The new recommended batch number
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = 'UPDATE daily_material_formula SET rec_chemical_raw_material_batch_no = ? WHERE daily_material_formula_id = ?';
+    const values = [recBatchNo, id];
+
+    const [result] = await connection.execute(sql, values);
+    await connection.end();
+
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Record not found');
+    }
+
+    res.send('Recommended batch number updated successfully');
+  } catch (error) {
+    console.error('Error updating recommended batch number:', error);
+    res.status(500).send('Error updating recommended batch number');
+  }
+});
+
+//get the position for the corresponding chemical batch number
+app.get('/get-chemical-position/:batchNo', async (req, res) => {
+  const { batchNo } = req.params; // Get the batch number from the request parameters
+
+  try {
+      const connection = await mysql.createConnection(dbConfig);
+      
+      // SQL query to select the position where the batch number matches
+      const sql = `
+          SELECT chemical_raw_material_position 
+          FROM chemical_individual_input 
+          WHERE chemical_raw_material_batch_no = ?;
+      `;
+
+      // Execute the query with the batch number
+      const [rows] = await connection.execute(sql, [batchNo]);
+
+      // Close the connection
+      await connection.end();
+
+      // Check if we got a result and send it back
+      if (rows.length > 0) {
+          res.json(rows[0]); // Send back the first row (assuming batch numbers are unique)
+      } else {
+          res.status(404).send('No position found for the given batch number');
+      }
+  } catch (error) {
+      console.error('Error fetching chemical position:', error.message);
+      res.status(500).send('Error fetching chemical position');
+  }
+});
+
+
 
 //-------------膠料基本黨-----------------------------------------------
 // get rubber rile ms.stickness_value,
