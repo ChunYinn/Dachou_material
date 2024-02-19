@@ -560,10 +560,10 @@ export default function DailyMaterialDetail() {
                         {selectedButton === '主膠領料單' && (
                           <>
                             <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"120px"}}>推薦批號</th>
-                            <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>位子</th>
+                            <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"70px"}}>位子</th>
                           </>
                         )}
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"100px"}}>用量/KG</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"90px"}}>用量/KG</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"50px"}}>是否完成</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900" style={{minWidth:"300px"}}>備註</th>
                       </tr>
@@ -616,9 +616,9 @@ export default function DailyMaterialDetail() {
                               )}
                                 {showNotesDialog && (
                                   <div
-                                    className="absolute z-50 bg-yellow-100 p-4 rounded shadow-md"
+                                    className="absolute z-50 bg-yellow-100 p-2 rounded shadow-md"
                                     style={{
-                                      width: '460px',
+                                      width: '400px',
                                       top: popOutPosition.y - 25,
                                       left: popOutPosition.x + 56,
                                     }}
@@ -626,11 +626,11 @@ export default function DailyMaterialDetail() {
                                     <table className="min-w-full divide-y divide-gray-300">
                                       <thead>
                                         <tr>
-                                          <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">膠料批號</th>
+                                          <th className="px-1 py-3 text-left text-sm font-semibold text-gray-900">膠料批號</th>
                                           <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">位置</th>
-                                          <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">硬度</th>
-                                          <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">剩餘公斤</th>
-                                          <th className="relative px-3 py-3 text-sm font-semibold text-gray-900">使用公斤</th>
+                                          <th className="px-1 py-3 text-left text-sm font-semibold text-gray-900">硬度</th>
+                                          <th className="px-2 py-3 text-left text-sm font-semibold text-gray-900">剩餘公斤</th>
+                                          <th className="relative px-1 py-3 text-sm font-semibold text-gray-900">使用公斤</th>
                                         </tr>
                                       </thead>
                                       <tbody className="bg-white divide-y divide-gray-200">
@@ -643,13 +643,14 @@ export default function DailyMaterialDetail() {
 
                                           return (
                                             <tr key={index}>
-                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_batch_no}</td>
+                                              <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_batch_no}</td>
                                               <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_position}</td>
-                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.input_test_hardness}</td>
-                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.batch_kg}</td>
-                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
+                                              <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{detail.input_test_hardness}</td>
+                                              <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{detail.batch_kg}</td>
+                                              <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <input
                                                   type="number"
+                                                  
                                                   disabled={isCollectingFinished}
                                                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                                   value={displayKg}
@@ -671,7 +672,7 @@ export default function DailyMaterialDetail() {
                                         className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                                         onClick={closeNotesDialog}
                                       >
-                                        Close
+                                        關閉
                                       </button>
                                     </div>
                                   </div>
