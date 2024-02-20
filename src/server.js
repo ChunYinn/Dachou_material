@@ -150,6 +150,23 @@ app.get('/material-stock-status/:materialAssignId', async (req, res) => {
   }
 });
 
+app.get('/check-material-exists/:materialId', async (req, res) => {
+  const { materialId } = req.params;
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const query = 'SELECT COUNT(*) AS count FROM rubber_file WHERE material_id = ?';
+    const [rows] = await connection.execute(query, [materialId]);
+    await connection.end();
+    // The material exists if count is greater than 0
+    const exists = rows[0].count > 0;
+    res.json({ exists });
+  } catch (error) {
+    console.error('Error checking material existence:', error.message);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
 
 
 app.post('/assign-material', async (req, res) => {
@@ -897,6 +914,108 @@ app.post('/add-rubber-formula', async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 });
+
+app.get('/suggestions/:inputValue', async (req, res) => {
+  const { inputValue } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    const sql = `
+      SELECT 
+        material_id
+      FROM 
+        rubber_file
+      WHERE 
+        material_id LIKE ?;
+    `;
+
+    // Append '%' to the prefix for a LIKE SQL query to match any records that start with the prefix
+    const [rows] = await connection.execute(sql, [`${inputValue}%`]);
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.json(rows);
+    } else {
+      res.status(404).send('No suggestions found for the given prefix');
+    }
+  } catch (error) {
+    console.error('Error fetching suggestions:', error.message);
+    res.status(500).send('Error fetching suggestions');
+  }
+});
+
+app.get('/check-sequence-exists/:date/:sequence', async (req, res) => {
+  const { date, sequence } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const query = `
+      SELECT COUNT(*) AS count 
+      FROM material_assignments 
+      WHERE production_date = ? AND production_sequence = ?
+    `;
+    const [rows] = await connection.execute(query, [date, sequence]);
+    await connection.end();
+
+    // The sequence exists if the count is greater than 0
+    const exists = rows[0].count > 0;
+    res.json({ exists });
+  } catch (error) {
+    console.error('Error checking sequence existence:', error.message);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
+
+app.get('/check-material-id/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = 'SELECT COUNT(*) AS count FROM rubber_file WHERE material_id = ?';
+    const [rows] = await connection.execute(sql, [id]);
+    await connection.end();
+    // If count is 0, the ID does not exist; otherwise, it does
+    res.json({ exists: rows[0].count > 0 });
+  } catch (error) {
+    console.error('Error checking material ID:', error.message);
+    res.status(500).send('Error checking material ID');
+  }
+});
+
+app.get('/raw-material-id-suggestions/:prefix', async (req, res) => {
+  const { prefix } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    const sql = `
+    SELECT 
+    chemical_raw_material_id, 
+    chemical_raw_material_name
+    FROM 
+      rubber_raw_material_file
+    WHERE 
+      chemical_raw_material_id LIKE ?
+    LIMIT 10;
+    `;
+
+    // Append '%' to the prefix for a LIKE SQL query to match any records that start with the prefix
+    const [rows] = await connection.execute(sql, [`${prefix}%`]);
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.json(rows); // Send the full row objects to the frontend
+    } else {
+      res.status(404).send('No suggestions found for the given prefix');
+    }    
+  } catch (error) {
+    console.error('Error fetching raw material ID suggestions:', error.message);
+    res.status(500).send('Error fetching raw material ID suggestions');
+  }
+});
+
 
 //-----------------inventory search-----------------------------------------------
 app.get('/search-materials-by-id', async (req, res) => {
