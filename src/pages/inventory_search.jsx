@@ -26,6 +26,9 @@ export default function InventorySearch() {
   const [sequence, setSequence] = useState(initialSequence);
   const [batchNumberForImport, setBatchNumber] = useState("");
   const [chemicalIndividualInput, setChemicalIndividualInput] = useState([]);
+  //------------------------------------------------ for suggesting search--------------------------------
+  const [chemicalSuggestions, setChemicalSuggestions] = useState([]);
+
 
   // Moved inside the component to access state directly
   const generateBatchNumber = (materialId, date, sequence) => {
@@ -203,14 +206,25 @@ export default function InventorySearch() {
     }
   };
   
-  const handleInputChange = (field, value) => {
+  const handleInputChange = async(field, value) => {
     // Clear other fields and set the current field
-    setInputFields({
-      chemicalId: '',
-      chemicalName: '',
-      batchNumber: '',
+    setInputFields(prevFields => ({
+      ...prevFields,
       [field]: value,
-    });
+    }));    
+
+    // Fetch suggestions for the 'chemicalId' field
+    if (field === 'chemicalId' && value.length >= 2) {
+      try {
+        const response = await axios.get(`http://localhost:5000/raw-material-id-suggestions/${value}`);
+        setChemicalSuggestions(response.data); // Update the suggestions state
+      } catch (error) {
+        console.error('Error fetching chemical ID suggestions:', error);
+        setChemicalSuggestions([]); // Clear suggestions in case of an error
+      }
+    } else if (field === 'chemicalId') {
+      setChemicalSuggestions([]); // Clear suggestions if the input is too short or cleared
+    }
   };
 
   const handleSearch = () => {
@@ -303,7 +317,29 @@ export default function InventorySearch() {
                 onChange={(e) => handleInputChange('chemicalId', e.target.value)}
                 className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 placeholder="DH10"
+                autoComplete="off"
               />
+              {chemicalSuggestions.length > 0 && (
+                <ul className="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg overflow-y-auto max-h-60">
+                  {chemicalSuggestions.map((suggestion, index) => (
+                    <li
+                      key={index}
+                      className="p-2 hover:bg-gray-100 cursor-pointer flex justify-between"
+                      onClick={() => {
+                        setInputFields(prevFields => ({
+                          ...prevFields,
+                          chemicalId: suggestion.chemical_raw_material_id,
+                          chemicalName: suggestion.chemical_raw_material_name, // Assuming you also have a field to display name
+                        }));
+                        setChemicalSuggestions([]); // Clear suggestions after selection
+                      }}
+                    >
+                      <span>{suggestion.chemical_raw_material_id}</span>
+                      <span className="ml-4 text-gray-500">{suggestion.chemical_raw_material_name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             {/* Chemical Name Input */}
             <div className="relative">
@@ -321,6 +357,7 @@ export default function InventorySearch() {
                 onChange={(e) => handleInputChange('chemicalName', e.target.value)}
                 className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 placeholder="AN-300"
+                autoComplete="off"
               />
             </div>
             {/* Batch Number Input */}
