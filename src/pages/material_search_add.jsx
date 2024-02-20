@@ -1,7 +1,7 @@
 import { Fragment, useState  } from 'react';
 import axios from 'axios';
 import { Dialog, Transition } from '@headlessui/react';
-import { PlusIcon } from '@heroicons/react/20/solid'
+import { PlusIcon } from '@heroicons/react/20/solid';
 
 //defaut value for left table showing material basic info
 const labels = ["膠料編號","材質","硬度","顏色","特殊用途","用途","主成分"];
@@ -11,7 +11,7 @@ const labels = ["膠料編號","材質","硬度","顏色","特殊用途","用途
 export default function MaterialSearchAdd() {
 
   // State for the material number input
-  const [materialID, setmaterialID] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   // State for the fetched material data
   const initialData = {
     material_id: "",
@@ -27,9 +27,16 @@ export default function MaterialSearchAdd() {
   const [materialTableData, setMaterialTableData] = useState([]);
   //------新增toggle-----------------------------
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  //------搜尋推薦--------------------------------
+  const [suggestions, setSuggestions] = useState([]);
+ 
+
+
+
 
   const toggleDialog = () => {
     setIsDialogOpen(!isDialogOpen);
+    setSuggestions([]);
   };
 
   const handleAddClick = () => {
@@ -62,26 +69,48 @@ export default function MaterialSearchAdd() {
 
   //-------------------------------------
   // Event handler for updating the material number input
-  const handleMaterialNumberChange = (event) => {
-    setmaterialID(event.target.value);
+  const handleMaterialNumberChange = async (event) => {
+    const inputValue = event.target.value;
+    setSearchInput(inputValue); // Update the searchInput state
+  
+    if (inputValue.length >= 2) {
+      try {
+        const response = await axios.get(`http://localhost:5000/suggestions/${inputValue}`);
+        setSuggestions(response.data); // Update the suggestions state
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      }
+    } else {
+      setSuggestions([]);
+    }
   };
+  // Event handler for searching the material input
+  const handleSuggestionSelect = (suggestion) => {
+    setSearchInput(suggestion.material_id); // Update the search input with the selected suggestion
+    setSuggestions([]); // Clear the suggestions
+  
+  };
+  
+  
+  
 
 // Event handler for the search button
 const handleSearch = async () => {
-  if (!materialID) {
+  if (!searchInput) {
     setMaterialData(initialData);
     setMaterialTableData([]);
-    window.alert('請輸入膠料編號'); // Alert if materialID is empty
+    window.alert('請輸入膠料編號'); // Alert if searchInput is empty
     return;
   }
 
-  // Perform both API calls concurrently
+  // Perform both API calls concurrently using searchInput
   try {
-    const infoResponse = axios.get(`http://localhost:5000/get-material-info/${materialID}`);
-    const tableResponse = axios.get(`http://localhost:5000/get-material-table-data/${materialID}`);
+    const infoResponsePromise = axios.get(`http://localhost:5000/get-material-info/${searchInput}`);
+    const tableResponsePromise = axios.get(`http://localhost:5000/get-material-table-data/${searchInput}`);
     
     // Wait for both API calls to finish
-    const [infoRes, tableRes] = await Promise.all([infoResponse, tableResponse]);
+    const [infoRes, tableRes] = await Promise.all([infoResponsePromise, tableResponsePromise]);
 
     // Check and update state for the first call response
     if (infoRes.data && Object.keys(infoRes.data).length > 0) {
@@ -131,23 +160,32 @@ const handleSearch = async () => {
             </div>
             <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex space-x-2">
         
-              <div className="relative">
-                <label
-                  htmlFor="name"
-                  className="absolute -top-2 left-2 inline-block bg-white px-1 text-xs font-semibold text-indigo-700"
-                >
-                  膠料編號
-                </label>
-                <input
-                  type="text"
-                  name="materialID"
-                  id="name"
-                  value={materialID}
-                  onChange={handleMaterialNumberChange}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                  placeholder="HA-A0-00-05-W"
-                />
+            <div className="relative">
+            <input
+              type="text"
+              name="materialID"
+              id="name"
+              value={searchInput}
+              onChange={handleMaterialNumberChange}
+              className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              placeholder="輸入膠料編號"
+              autoComplete="off"
+            />
+                {suggestions.length > 0 && (
+                  <ul className="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg sm:text-sm max-h-56 overflow-y-auto">
+                    {suggestions.map((suggestion, index) => (
+                      <li
+                        key={index}
+                        className="p-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => handleSuggestionSelect(suggestion)}
+                      >
+                        {suggestion.material_id}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
+
               <button
                 type="button"
                 onClick={handleSearch}
@@ -296,10 +334,11 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
   const [materialFunction, setMaterialFunction] = useState('');
   const [order, setOrder] = useState('');
   const [rawMaterials, setRawMaterials] = useState([]);
+  const [rawMaterialIDSuggestions, setRawMaterialIDSuggestions] = useState([]);
   // const [addRubberData, setAddRubberData] = useState({});
 
   // Handle the submission of export data
-  const handleSubmit = () => {
+  const handleSubmit = async() => {
     if (!materialID || !purpose || !mainIngredient) {
       alert("請填寫膠料編號、用途、和主成分");
       return;
@@ -308,6 +347,13 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
     if (!validateMaterialID(materialID)) {
       alert("膠料編號格式不正確");
       return false;
+    }
+
+    // Check if the materialID already exists
+    const idExists = await checkMaterialIDExists(materialID);
+    if (idExists) {
+      alert("膠料編號已經存在");
+      return;
     }
   
     // Get the parts of the material ID
@@ -343,6 +389,19 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
   const validateMaterialID = (id) => {
     const regex = /^[A-Z]{2}-[A-Z][0-9]-[0-9]{2}-[0-9]{2}-[A-Z]$/;
     return regex.test(id);
+  };
+
+  // Function to check if the materialID already exists in the database
+  const checkMaterialIDExists = async (id) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/check-material-id/${id}`);
+      // If the backend returns a specific response indicating the ID exists, return true
+      return response.data.exists; // Assuming the backend sends { exists: true } or { exists: false }
+    } catch (error) {
+      console.error('Error checking material ID:', error);
+      // Handle the error appropriately - maybe return false or show an alert
+      return false;
+    }
   };
 
   const handleAddRawMaterial = async() => {
@@ -391,7 +450,6 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
       const response = await fetch(`http://localhost:5000/get-material-name/${id}`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Material Name:', data.chemicalRawMaterialName);
         return data.chemicalRawMaterialName;
       } else {
         throw new Error('Material not found');
@@ -408,6 +466,32 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
     // Update the state with the filtered array
     setRawMaterials(updatedRawMaterials);
   };
+
+  //Suggest Raw MaterialID
+  const handleRawMaterialIDChange = async (event) => {
+    const inputValue = event.target.value;
+    setRawMaterialID(inputValue); // Update the rawMaterialID state
+  
+    if (inputValue.length >= 2) {
+      try {
+        // Replace `/raw-material-id-suggestions/` with your actual endpoint
+        const response = await axios.get(`http://localhost:5000/raw-material-id-suggestions/${inputValue}`);
+        setRawMaterialIDSuggestions(response.data); // Update the rawMaterialIDSuggestions state
+      } catch (error) {
+        console.error('Error fetching raw material ID suggestions:', error);
+        setRawMaterialIDSuggestions([]); // Reset the rawMaterialIDSuggestions in case of error
+      }
+    } else {
+      setRawMaterialIDSuggestions([]); // Clear the suggestions if input is too short
+    }
+  };
+  const handleRawMaterialIDSuggestionSelect = (suggestion) => {
+    setRawMaterialID(suggestion.chemical_raw_material_id); // Update the input with the selected suggestion
+    setRawMaterialIDSuggestions([]); // Clear the suggestions
+    // Perform any additional actions necessary after selection
+  };
+  
+  
 
   return (
     <Transition.Root show={open} as={Fragment}>
@@ -510,10 +594,25 @@ export function AddMaterialDialog({ open, onClose, onExportSubmit }) {
                       name="raw-material-id"
                       id="raw-material-id"
                       value={rawMaterialID}
-                      onChange={(e) => setRawMaterialID(e.target.value)}
+                      onChange={handleRawMaterialIDChange}
                       className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                       placeholder="DA03"
+                      autoComplete="off"
                     />
+                    {rawMaterialIDSuggestions.length > 0 && (
+                      <ul className="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg overflow-y-auto max-h-60 sm:text-sm sm:leading-6">
+                        {rawMaterialIDSuggestions.map((suggestion, index) => (
+                          <li
+                            key={index}
+                            className="p-2 hover:bg-gray-100 cursor-pointer flex justify-between"
+                            onClick={() => handleRawMaterialIDSuggestionSelect(suggestion)}
+                          >
+                            <span>{suggestion.chemical_raw_material_id}</span>
+                            <span className="ml-4 text-gray-500">{suggestion.chemical_raw_material_name}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <div className="relative sm:col-span-1">
                     <label

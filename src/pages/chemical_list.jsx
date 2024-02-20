@@ -164,7 +164,7 @@ const handleDelete = (chemical_raw_material_id) => {
                           化工原料ID
                         </div>
                         <input type="text" value={idFilter} onChange={handleIDFilterChange} className="mt-2 w-32 block h-7 p-1 border rounded small-placeholder"
-                        placeholder="ex: 01-01"/>
+                        placeholder="ex: DA03"/>
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900" style={{width: "15%"}}>
                         <div className="flex items-center">
