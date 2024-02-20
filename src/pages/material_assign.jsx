@@ -402,6 +402,8 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
   const [demand, setDemand] = useState('');
   const [order, setOrder] = useState('');
   const [location, setLocation] = useState('內');
+  const [materialIDSuggestions, setMaterialIDSuggestions] = useState([]);
+
 
   const generateBatchNumber = (date, sequence) => {
     const year = date.format('YY'); // Last two digits of the year
@@ -427,23 +429,59 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
   }, [editingMaterial]);
   
 
-  const prepareDataAndSubmit = () => {
+  const prepareDataAndSubmit = async () => {
     if (!glueId || !demand || !order || !location) {
       alert("請填寫全部..");
       return;
     }
-
-    const assignmentData = {
-      production_date: editingMaterial ? editingMaterial.production_date : selectedDate.add(8, 'hour').format('YYYY-MM-DD'),
-      material_id: glueId,
-      total_demand: demand,
-      production_sequence: order,
-      production_machine: location,
-      batch_number: editingMaterial ? editingMaterial.batch_number : generateBatchNumber(selectedDate, order)
-    };
-
-    onSubmit(assignmentData);
+  
+    // Convert selectedDate to the correct format if necessary
+    const formattedDate = selectedDate.add(8, 'hour').format('YYYY-MM-DD');
+  
+    // First try-catch to check for the material existence
+    try {
+      const materialResponse = await axios.get(`http://localhost:5000/check-material-exists/${glueId}`);
+      if (!materialResponse.data.exists) {
+        alert("無此膠料 請先到膠料基本檔建立新膠料");
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking material existence:', error);
+      // Handle error appropriately
+      return;
+    }
+  
+    // Second try-catch to check for the sequence existence
+    try {
+      const sequenceResponse = await axios.get(`http://localhost:5000/check-sequence-exists/${formattedDate}/${order}`);
+      if (sequenceResponse.data.exists) {
+        alert("同天不能有重複的打料順序");
+        return;
+      }
+      // Continue with assignment submission...
+    } catch (error) {
+      console.error('Error checking sequence existence:', error);
+      // Handle error appropriately
+      return;
+    }
+  
+    // If all checks pass, then proceed to submit the data
+    try {
+      const assignmentData = {
+        production_date: formattedDate,
+        material_id: glueId,
+        total_demand: demand,
+        production_sequence: order,
+        production_machine: location,
+        batch_number: editingMaterial ? editingMaterial.batch_number : generateBatchNumber(selectedDate, order)
+      };
+      onSubmit(assignmentData);
+    } catch (error) {
+      console.error('Error submitting material assignment:', error);
+      // Handle error appropriately
+    }
   };
+  
   
   // Create a custom theme
   const newTheme = createTheme({
@@ -478,6 +516,23 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
   
     return `${year}-${month}-${day}`;
   }
+  //Handle the input change and fetch suggestions
+  const handleGlueIdChange = async (event) => {
+    const inputValue = event.target.value;
+    setGlueId(inputValue); // Update the glueId state
+  
+    if (inputValue.length >= 2) {
+      try {
+        const response = await axios.get(`http://localhost:5000/suggestions/${inputValue}`);
+        setMaterialIDSuggestions(response.data); // Update the materialIDSuggestions state
+      } catch (error) {
+        console.error('Error fetching material ID suggestions:', error);
+        setMaterialIDSuggestions([]); // Reset the materialIDSuggestions in case of error
+      }
+    } else {
+      setMaterialIDSuggestions([]); // Clear the suggestions if input is too short
+    }
+  };
   
 
   return (
@@ -557,15 +612,32 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                         <label htmlFor="glue_id" className="block mt-3 text-sm font-bold leading-6 text-gray-900">
                           膠料編號
                         </label>
-                        <div className="mt-1">
+                        <div className="mt-1 relative">
                           <input
                             type="text"
                             id="glue_id"
                             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-green-600 sm:text-sm sm:leading-6"
                             placeholder="必須一模一樣"
                             value={glueId}
-                            onChange={(e) => setGlueId(e.target.value)}
+                            onChange={handleGlueIdChange}
+                            autoComplete="off"
                           />
+                          {materialIDSuggestions.length > 0 && (
+                            <ul className="absolute z-20 w-full bg-white border border-gray-300 mt-1 rounded-md shadow-lg overflow-y-auto max-h-60">
+                              {materialIDSuggestions.map((suggestion, index) => (
+                                <li
+                                  key={index}
+                                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                                  onClick={() => {
+                                    setGlueId(suggestion.material_id);
+                                    setMaterialIDSuggestions([]);
+                                  }}
+                                >
+                                  {suggestion.material_id}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
                         <label htmlFor="demand" className="block mt-3 text-sm font-bold leading-6 text-gray-900">
                           總需求量
@@ -588,7 +660,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                             type="text"
                             id="order"
                             className={`block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6 ${editingMaterial ? "focus:ring-red-600" : "focus:ring-green-600"}`}
-                            placeholder="同天不能重複.."
+                            placeholder="同天不能重複"
                             value={order}
                             onChange={(e) => setOrder(e.target.value)}
                             readOnly={editingMaterial ? true : false}

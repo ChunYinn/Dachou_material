@@ -150,6 +150,23 @@ app.get('/material-stock-status/:materialAssignId', async (req, res) => {
   }
 });
 
+app.get('/check-material-exists/:materialId', async (req, res) => {
+  const { materialId } = req.params;
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const query = 'SELECT COUNT(*) AS count FROM rubber_file WHERE material_id = ?';
+    const [rows] = await connection.execute(query, [materialId]);
+    await connection.end();
+    // The material exists if count is greater than 0
+    const exists = rows[0].count > 0;
+    res.json({ exists });
+  } catch (error) {
+    console.error('Error checking material existence:', error.message);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
 
 
 app.post('/assign-material', async (req, res) => {
@@ -867,6 +884,30 @@ app.get('/suggestions/:inputValue', async (req, res) => {
     res.status(500).send('Error fetching suggestions');
   }
 });
+
+app.get('/check-sequence-exists/:date/:sequence', async (req, res) => {
+  const { date, sequence } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const query = `
+      SELECT COUNT(*) AS count 
+      FROM material_assignments 
+      WHERE production_date = ? AND production_sequence = ?
+    `;
+    const [rows] = await connection.execute(query, [date, sequence]);
+    await connection.end();
+
+    // The sequence exists if the count is greater than 0
+    const exists = rows[0].count > 0;
+    res.json({ exists });
+  } catch (error) {
+    console.error('Error checking sequence existence:', error.message);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+
 
 app.get('/check-material-id/:id', async (req, res) => {
   const { id } = req.params;
