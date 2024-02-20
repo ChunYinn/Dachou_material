@@ -150,6 +150,11 @@ export default function DailyMaterialDetail() {
           console.log('Best combination:', parsedResult.bestCombinationDetails);
           updateMaterialsBatchNumber(batchNumber, parsedResult.bestCombinationDetails);
 
+          //store the recommended batch number in the database
+          result.bestCombinationDetails.forEach(async (detail) => {
+            await updateRecommendedBatchNumberInDatabase(findDailyMaterialFormulaId(batchNumber, detail.material), detail.batchNumber);
+          });
+
           const dailyMaterialFormulaIds = findAllRelevantDailyMaterialFormulaIdsByBatchNumber(batchNumber);
           Promise.all(dailyMaterialFormulaIds.map(clearOutputKgForBatch)).then(async () => {
             // After clearing, update with new batch numbers and kg
@@ -163,21 +168,33 @@ export default function DailyMaterialDetail() {
             }
           });
       
-          // Update userInputs with new inputs for this batch
-          const newInputsForBatch = parsedResult.bestCombinationDetails.reduce((acc, detail) => {
-              if (!acc[detail.material]) acc[detail.material] = {};
-              acc[detail.material][detail.batchNumber] = detail.kg.toString();
-              return acc;
-          }, {});
-      
-          setUserInputs(prevInputs => ({
-              ...prevInputs,
-              [batchNumber]: newInputsForBatch // Update inputs for this batch
-          }));
+          const newUserInputs = { ...userInputs };
+
+          // Check if there are any inputs for the given batchNumber
+          if (newUserInputs[batchNumber]) {
+            Object.keys(newUserInputs[batchNumber]).forEach(material => {
+              if (newUserInputs[batchNumber][material]) {
+                Object.keys(newUserInputs[batchNumber][material]).forEach(rawMaterialBatchNo => {
+                  if (newUserInputs[batchNumber][material][rawMaterialBatchNo]) {
+                    newUserInputs[batchNumber][material][rawMaterialBatchNo] = "0";
+                  }
+                });
+              }
+            });
+
+            parsedResult.bestCombinationDetails.forEach(detail => {
+              // Directly setting new inputs for the relevant materials
+              if (!newUserInputs[batchNumber][detail.material]) newUserInputs[batchNumber][detail.material] = {};
+              newUserInputs[batchNumber][detail.material][detail.batchNumber] = detail.kg.toString();
+            });
+
+            // Finally, update the userInputs state
+            setUserInputs(newUserInputs);
+          }
       
           setCurrentHardness(prevHardness => ({
               ...prevHardness,
-              [batchNumber]: parsedResult.finalAvgHardness.toFixed(2) // Keeping two decimal points for hardness
+              [batchNumber]: parsedResult.finalAvgHardness.toFixed(2)
           }));
       }
 
@@ -236,7 +253,6 @@ export default function DailyMaterialDetail() {
     return []; // Return an empty array if no relevant materials found for the batchNumber
   };
   
-
   const updateRecommendedBatchNumberInDatabase = async (materialId, recBatchNo) => {
     try {
       const response = await axios.put(`http://localhost:5000/update-recommended-batch/${materialId}`, { recBatchNo });
@@ -317,7 +333,7 @@ export default function DailyMaterialDetail() {
 
         fetchData();
     }
-  }, [date]);
+  }, []);
 
   //Frontend: update collector
   const updateCollectorName = async (collectorName, type) => {
@@ -426,8 +442,6 @@ export default function DailyMaterialDetail() {
     updateNotesInGroupedData(materialId, newNotes);
   };
   //------handle recommendation batch change------------------------------------------------------
-
-
   // Function to handle button click-----------------------------------
   const handleButtonClick = (buttonType) => {
     if (showNotesDialog) {
@@ -464,38 +478,52 @@ export default function DailyMaterialDetail() {
   const groupedDataEntries = Object.entries(groupedData);
 
   //----hardness calculation--------------------------------
-  // const recalculateHardnessForBatch = (batchNumber) => {
-  //   let totalKg = 0;
-  //   let totalHardnessKg = 0;
-  
-  //   // Check if the batchNumber exists in updatedInputs, if not, set initial hardness to 0
-  //   if (!userInputs[batchNumber]) {
-  //     setCurrentHardness(prevHardness => ({
-  //       ...prevHardness,
-  //       [batchNumber]: "0.00" // Initialize to "0.00" if batchNumber is undefined
-  //     }));
-  //     return; // Exit the function early
-  //   }
-  
-  //   // Proceed if batchNumber exists
-  //   Object.entries(userInputs[batchNumber]).forEach(([chemicalId, batches]) => {
-  //     Object.entries(batches).forEach(([batchNo, kg]) => {
-  //       const kgParsed = parseFloat(kg);
-  //       const chemical = chemicalDetails.find(d => d.chemical_raw_material_batch_no === batchNo);
-  //       if (chemical && !isNaN(kgParsed)) {
-  //         totalKg += kgParsed;
-  //         totalHardnessKg += chemical.input_test_hardness * kgParsed;
-  //       }
-  //     });
-  //   });
-  
-  //   const newHardness = totalKg > 0 ? totalHardnessKg / totalKg : 0;
-  //   setCurrentHardness(prevHardness => ({
-  //     ...prevHardness,
-  //     [batchNumber]: newHardness.toFixed(2) // Keeping two decimal points for hardness
-  //   }));
-  // };
-  
+  const recalculateHardnessForBatch = async (batchNumber) => {
+    let totalKg = 0;
+    let totalHardnessKg = 0;
+
+    if (!userInputs[batchNumber]) {
+        setCurrentHardness(prevHardness => ({
+            ...prevHardness,
+            [batchNumber]: "0.00"
+        }));
+        return;
+    }
+
+    // Map each batch to a fetch promise
+    const fetchPromises = Object.entries(userInputs[batchNumber]).flatMap(([chemicalId, batches]) =>
+        Object.entries(batches).map(async ([batchNo, kg]) => {
+            const kgParsed = parseFloat(kg);
+            if (isNaN(kgParsed) || kgParsed === 0) return null; // Skip if kg is not a number or zero
+
+            try {
+                const response = await axios.get(`http://localhost:5000/get-hardness-from-db/${batchNo}`);
+                const hardness = response.data.input_test_hardness;
+                return { kg: kgParsed, hardness };
+            } catch (error) {
+                console.error('Error fetching hardness:', error);
+                return null;
+            }
+        })
+    );
+
+    // Wait for all fetch operations to complete
+    const results = await Promise.all(fetchPromises);
+
+    // Filter out null results and calculate totalKg and totalHardnessKg
+    results.filter(result => result !== null).forEach(({ kg, hardness }) => {
+        totalKg += kg;
+        totalHardnessKg += hardness * kg;
+    });
+
+    const newHardness = totalKg > 0 ? totalHardnessKg / totalKg : 0;
+    setCurrentHardness(prevHardness => ({
+        ...prevHardness,
+        [batchNumber]: newHardness.toFixed(2)
+    }));
+  };
+
+    
 
   // Remove the recalculateHardnessForBatch call from handleUserInputChange
   const handleUserInputChange = async (batchNumber, materialId, batchNo, value) => {
@@ -514,7 +542,19 @@ export default function DailyMaterialDetail() {
   
     // Now, call the backend to update the database
     updatePopOutInputs(activeMaterialId, batchNo, sanitizedValue);
+
+    // Recalculate hardness for the batch after updating userInputs
+    recalculateHardnessForBatch(batchNumber);
   };
+
+  // useEffect(() => {
+  //   if (selectedBatchNumber) { // Ensure there is a selected batch number
+  //     console.log('Recalculating hardness for batch:', selectedBatchNumber);
+  //     recalculateHardnessForBatch(selectedBatchNumber);
+  //   }
+  // }, [userInputs, selectedBatchNumber]);
+
+  //--------------------------------------------------------------------------------
 
   const updatePopOutInputs = async(daily_material_formula_id, chemical_raw_material_batch_no, output_kg) => {
     try {
@@ -528,7 +568,7 @@ export default function DailyMaterialDetail() {
       console.error('Error updating output information:', error);
     }
   }
-  //---FETCH POPout data usage kg---------------
+
   // Helper function to find batchNumber and materialId by daily_material_formula_id
   const findBatchAndMaterialId = (daily_material_formula_id, groupedDataaa) => {
     for (const batchNumber in groupedDataaa) {

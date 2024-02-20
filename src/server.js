@@ -769,6 +769,33 @@ app.post('/clear-output-kg-for-dailymaterialformulaid/:id', async (req, res) => 
   }
 });
 
+// Endpoint to get the hardness based on chemical_raw_material_batch_no
+app.get('/get-hardness-from-db/:batchNo', async (req, res) => {
+  const { batchNo } = req.params; // Extract batchNo from URL parameters
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `
+        SELECT input_test_hardness
+        FROM chemical_individual_input
+        WHERE chemical_raw_material_batch_no = ?;
+    `;
+    const [rows] = await connection.execute(sql, [batchNo]);
+
+    await connection.end();
+
+    if (rows.length > 0) {
+      // Assuming each batchNo has a unique entry, so directly returning the first result
+      res.json(rows[0]);
+    } else {
+      res.status(404).send({ message: 'Chemical raw material batch number not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching hardness:', error);
+    res.status(500).send('Error fetching hardness data');
+  }
+});
+
 //-------------膠料基本黨-----------------------------------------------
 // get rubber rile ms.stickness_value,
 app.get('/get-material-info/:materialID', async (req, res) => {
