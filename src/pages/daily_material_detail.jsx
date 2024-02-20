@@ -25,15 +25,25 @@ export default function DailyMaterialDetail() {
   const [activeMaterialId, setActiveMaterialId] = useState('');
   const [chemicalDetails, setChemicalDetails] = useState([]);
   const [userInputs, setUserInputs] = useState({});
-  const [calculationResults, setCalculationResults] = useState({}); // State to store the calculation results 
   const [currentHardness, setCurrentHardness] = useState({}); // State to store the current hardness
+  const [isLoading, setIsLoading] = useState(true);
+
+  const integrateUserInputs = (fetchedChemicalDetails, batchNumber) => {
+    return fetchedChemicalDetails.map(detail => {
+      const outputKg = userInputs[batchNumber]?.[detail.chemical_raw_material_id]?.[detail.chemical_raw_material_batch_no];
+      return {
+        ...detail,
+        usage_kg: outputKg ? parseFloat(outputKg) : 0 // Default to 0 if no matching user input
+      };
+    });
+  };
 
   // Function to show the dialog when the icon is clicked
-  const handleIconClick = async(batchNumber, chemicalRawMaterialId, materialId, event) => {
+  const handleIconClick = async(batchNumber, chemicalRawMaterialId, dailyMaterialId, event) => {
     setSelectedBatchNumber(batchNumber);
-    setActiveMaterialId(materialId);
-    console.log('Icon clicked:', batchNumber, chemicalRawMaterialId, materialId);
-    setSelectedRowId(materialId); // Set the ID of the selected row
+    setActiveMaterialId(dailyMaterialId);
+    console.log('Icon clicked:', batchNumber, chemicalRawMaterialId, dailyMaterialId);
+    setSelectedRowId(dailyMaterialId); // Set the ID of the selected row
     const iconRect = event.currentTarget.getBoundingClientRect();
     setPopOutPosition({
       x: iconRect.left + window.scrollX,
@@ -44,7 +54,12 @@ export default function DailyMaterialDetail() {
     try {
       // Fetch the chemical input details from the backend
       const response = await axios.get(`http://localhost:5000/get-chemical-input-detail/${chemicalRawMaterialId}`);
-      setChemicalDetails(response.data);
+      // Integrate with userInputs to add usage_kg values
+      let fetchedChemicalDetails = response.data;
+
+      const integratedChemicalDetails = integrateUserInputs(fetchedChemicalDetails, batchNumber);
+      setChemicalDetails(integratedChemicalDetails);
+
     } catch (error) {
       console.error('Error fetching chemical input details:', error);
       setChemicalDetails([]);
@@ -71,9 +86,21 @@ export default function DailyMaterialDetail() {
     return isNaN(hardness) ? 0 : hardness;
   };
 
+  // Clearing existing values in the database for all relevant daily_material_formula_id values
+  async function clearOutputKgForBatch(id) {
+    try {
+        const response = await axios.post(`http://localhost:5000/clear-output-kg-for-dailymaterialformulaid/${id}`);
+        console.log(response.data.message);
+    } catch (error) {
+        console.error(`Error clearing output kg for ID ${id}:`, error.response?.data?.message || error.message);
+    }
+  }
+  
   // Assuming groupedData and other utility functions like validateMaterialID, extractHardnessFromID are defined elsewhere
   const handleCalculateOptimalHardness = async (batchNumber) => {
     console.log(`Calculating optimal hardness for batch: ${batchNumber}`);
+
+    setShowNotesDialog(false); // Close the dialog if it's open
 
     const batchInfo = groupedData[batchNumber];
     if (!batchInfo) {
@@ -82,7 +109,6 @@ export default function DailyMaterialDetail() {
     }
 
     const materialID = batchInfo.material_id;
-    console.log('Material ID:', materialID);
     const hardness = validateMaterialID(materialID) ? extractHardnessFromID(materialID) : 0.00;
 
     const formulaRequirements = batchInfo.materials.reduce((acc, material) => {
@@ -113,46 +139,48 @@ export default function DailyMaterialDetail() {
       }, {});
 
       const result = findBestMaterialCombination(materials, formulaRequirements, hardness, batchNumber);
-      console.log(result);
-
       const parsedResult = result
+
+      console.log('Best combination:', parsedResult);
 
       // Update the UI based on the results
       if (parsedResult.error) {
         alert(parsedResult.error);
       } else {
-        console.log('Best combination:', parsedResult.bestCombinationDetails);
-        updateMaterialsBatchNumber(batchNumber, result.bestCombinationDetails);
+          console.log('Best combination:', parsedResult.bestCombinationDetails);
+          updateMaterialsBatchNumber(batchNumber, parsedResult.bestCombinationDetails);
 
-        //store the recommended batch number in the database
-        result.bestCombinationDetails.forEach(async (detail) => {
-          await updateRecommendedBatchNumberInDatabase(findDailyMaterialFormulaId(batchNumber, detail.material), detail.batchNumber);
-        });
-
-        // Map over parsedResult.bestCombinationDetails to update userInputs
+          const dailyMaterialFormulaIds = findAllRelevantDailyMaterialFormulaIdsByBatchNumber(batchNumber);
+          Promise.all(dailyMaterialFormulaIds.map(clearOutputKgForBatch)).then(async () => {
+            // After clearing, update with new batch numbers and kg
+            for (const detail of parsedResult.bestCombinationDetails) {
+                const daily_material_formula_id = findDailyMaterialFormulaId(batchNumber, detail.material);
+                if (daily_material_formula_id) {
+                    await updatePopOutInputs(daily_material_formula_id, detail.batchNumber, detail.kg);
+                } else {
+                    console.error(`No daily_material_formula_id found for material ${detail.material}`);
+                }
+            }
+          });
+      
+          // Update userInputs with new inputs for this batch
           const newInputsForBatch = parsedResult.bestCombinationDetails.reduce((acc, detail) => {
-            if (!acc[detail.material]) acc[detail.material] = {};
-            acc[detail.material][detail.batchNumber] = detail.kg.toString();
-            return acc;
-        }, {});
-
-        setUserInputs(prevInputs => ({
-            ...prevInputs,
-            [batchNumber]: newInputsForBatch // Update inputs for this batch
-        }));
-
-        setCalculationResults(prevResults => ({
-          ...prevResults,
-          [batchNumber]: parsedResult
-        }));
-
-        setCurrentHardness(prevHardness => ({
-          ...prevHardness,
-          [batchNumber]: parsedResult.finalAvgHardness.toFixed(2) // Keeping two decimal points for hardness
-        }));
+              if (!acc[detail.material]) acc[detail.material] = {};
+              acc[detail.material][detail.batchNumber] = detail.kg.toString();
+              return acc;
+          }, {});
+      
+          setUserInputs(prevInputs => ({
+              ...prevInputs,
+              [batchNumber]: newInputsForBatch // Update inputs for this batch
+          }));
+      
+          setCurrentHardness(prevHardness => ({
+              ...prevHardness,
+              [batchNumber]: parsedResult.finalAvgHardness.toFixed(2) // Keeping two decimal points for hardness
+          }));
       }
 
-      console.log('User inputs:', userInputs);
     });
   };
 
@@ -193,6 +221,22 @@ export default function DailyMaterialDetail() {
     return null; // Return null if no matching material is found
   };
 
+  //for finding all daily_material_formula_id by batch number A to I
+  const findAllRelevantDailyMaterialFormulaIdsByBatchNumber = (batchNumber) => {
+    const batchData = groupedData[batchNumber];
+  
+    if (batchData && batchData.materials) {
+      // Filter materials first, then map to get their daily_material_formula_id values
+      return batchData.materials.filter(material => {
+        const secondLetter = material.chemical_raw_material_id.charAt(1).toUpperCase();
+        return secondLetter >= 'A' && secondLetter <= 'I';
+      }).map(material => material.daily_material_formula_id);
+    }
+  
+    return []; // Return an empty array if no relevant materials found for the batchNumber
+  };
+  
+
   const updateRecommendedBatchNumberInDatabase = async (materialId, recBatchNo) => {
     try {
       const response = await axios.put(`http://localhost:5000/update-recommended-batch/${materialId}`, { recBatchNo });
@@ -205,49 +249,73 @@ export default function DailyMaterialDetail() {
   //-----------------------------------------------------------------------
   useEffect(() => {
     if (date) {
-      axios.get(`http://localhost:5000/get-material-detail/${date}`)
-        .then(response => {
-          const fetchedData = response.data;
-          const groupedByBatch = fetchedData.reduce((acc, curr) => {
-            const batchKey = curr.batch_number;
-            if (!acc[batchKey]) {
-              acc[batchKey] = {
-                order: curr.batch_number.split('-')[1],
-                daily_material_formula_id: curr.daily_material_formula_id,
-                material_id: curr.material_id,
-                total_demand: curr.total_demand,
-                production_machine: curr.production_machine,
-                materials: []
-              };
-            }
-            acc[batchKey].materials.push({
-              daily_material_formula_id: curr.daily_material_formula_id,
-              chemical_raw_material_id: curr.chemical_raw_material_id,
-              chemical_raw_material_name: curr.chemical_raw_material_name,
-              rec_chemical_raw_material_batch_no: curr.rec_chemical_raw_material_batch_no,
-              position: curr.chemical_raw_material_position,
-              usage_kg: curr.usage_kg,
-              collecting_status: !!curr.collecting_finished,
-              notes: curr.notes || ''
-            });
-            return acc;
-          }, {});
-          setGroupedData(groupedByBatch);
-        })
-        .catch(error => {
-          console.error('Error fetching details:', error);
-        });
+        const fetchData = async () => {
+          setIsLoading(true);
+            try {
+                const materialDetailsResponse = await axios.get(`http://localhost:5000/get-material-detail/${date}`);
+                const fetchedData = materialDetailsResponse.data;
 
-        // Fetch collector names
-        axios.get(`http://localhost:5000/get-collector-names/${date}`)
-        .then(response => {
-          const { main_glue_collector, promoter_collector } = response.data;
-          setMainGlueCollector(main_glue_collector || '');
-          setPromoterCollector(promoter_collector || '');
-        })
-        .catch(error => {
-          console.error('Error fetching collector names:', error);
-        });
+                // Fetch output data
+                const outputDataResponse = await axios.get('http://localhost:5000/get-all-output-data');
+                const outputData = outputDataResponse.data;
+
+                const groupedByBatch = fetchedData.reduce((acc, curr) => {
+                    const batchKey = curr.batch_number;
+                    if (!acc[batchKey]) {
+                        acc[batchKey] = {
+                            order: curr.batch_number.split('-')[1],
+                            daily_material_formula_id: curr.daily_material_formula_id,
+                            material_id: curr.material_id,
+                            total_demand: curr.total_demand,
+                            production_machine: curr.production_machine,
+                            materials: []
+                        };
+                    }
+                    acc[batchKey].materials.push({
+                        daily_material_formula_id: curr.daily_material_formula_id,
+                        chemical_raw_material_id: curr.chemical_raw_material_id,
+                        chemical_raw_material_name: curr.chemical_raw_material_name,
+                        rec_chemical_raw_material_batch_no: curr.rec_chemical_raw_material_batch_no,
+                        position: curr.chemical_raw_material_position,
+                        usage_kg: curr.usage_kg,
+                        collecting_status: !!curr.collecting_finished,
+                        notes: curr.notes || ''
+                    });
+                    return acc;
+                }, {});
+                setGroupedData(groupedByBatch);
+              
+                // Integrate with userInputs state
+                const newInputs = { ...userInputs };
+
+                outputData.forEach(({ daily_material_formula_id, chemical_raw_material_batch_no, output_kg }) => {
+                    const { batchNumber, materialId } = findBatchAndMaterialId(daily_material_formula_id, groupedByBatch);
+
+                    if (batchNumber && materialId) {
+                        if (!newInputs[batchNumber]) newInputs[batchNumber] = {};
+                        if (!newInputs[batchNumber][materialId]) newInputs[batchNumber][materialId] = {};
+                        newInputs[batchNumber][materialId][chemical_raw_material_batch_no] = output_kg.toString();
+                    }
+                });
+                setUserInputs(newInputs);
+
+            } catch (error) {
+                console.error('Error fetching details or integrating output data:', error);
+            }
+
+            // Optionally, fetch collector names
+            try {
+                const collectorNamesResponse = await axios.get(`http://localhost:5000/get-collector-names/${date}`);
+                const { main_glue_collector, promoter_collector } = collectorNamesResponse.data;
+                setMainGlueCollector(main_glue_collector || '');
+                setPromoterCollector(promoter_collector || '');
+            } catch (error) {
+                console.error('Error fetching collector names:', error);
+            }
+            setIsLoading(false);
+        };
+
+        fetchData();
     }
   }, [date]);
 
@@ -396,71 +464,90 @@ export default function DailyMaterialDetail() {
   const groupedDataEntries = Object.entries(groupedData);
 
   //----hardness calculation--------------------------------
-  const recalculateHardnessForBatch = (batchNumber) => {
-    let totalKg = 0;
-    let totalHardnessKg = 0;
+  // const recalculateHardnessForBatch = (batchNumber) => {
+  //   let totalKg = 0;
+  //   let totalHardnessKg = 0;
   
-    // Check if the batchNumber exists in updatedInputs, if not, set initial hardness to 0
-    if (!userInputs[batchNumber]) {
-      setCurrentHardness(prevHardness => ({
-        ...prevHardness,
-        [batchNumber]: "0.00" // Initialize to "0.00" if batchNumber is undefined
-      }));
-      return; // Exit the function early
-    }
+  //   // Check if the batchNumber exists in updatedInputs, if not, set initial hardness to 0
+  //   if (!userInputs[batchNumber]) {
+  //     setCurrentHardness(prevHardness => ({
+  //       ...prevHardness,
+  //       [batchNumber]: "0.00" // Initialize to "0.00" if batchNumber is undefined
+  //     }));
+  //     return; // Exit the function early
+  //   }
   
-    // Proceed if batchNumber exists
-    Object.entries(userInputs[batchNumber]).forEach(([chemicalId, batches]) => {
-      Object.entries(batches).forEach(([batchNo, kg]) => {
-        const kgParsed = parseFloat(kg);
-        const chemical = chemicalDetails.find(d => d.chemical_raw_material_batch_no === batchNo);
-        if (chemical && !isNaN(kgParsed)) {
-          totalKg += kgParsed;
-          totalHardnessKg += chemical.input_test_hardness * kgParsed;
-        }
-      });
-    });
+  //   // Proceed if batchNumber exists
+  //   Object.entries(userInputs[batchNumber]).forEach(([chemicalId, batches]) => {
+  //     Object.entries(batches).forEach(([batchNo, kg]) => {
+  //       const kgParsed = parseFloat(kg);
+  //       const chemical = chemicalDetails.find(d => d.chemical_raw_material_batch_no === batchNo);
+  //       if (chemical && !isNaN(kgParsed)) {
+  //         totalKg += kgParsed;
+  //         totalHardnessKg += chemical.input_test_hardness * kgParsed;
+  //       }
+  //     });
+  //   });
   
-    const newHardness = totalKg > 0 ? totalHardnessKg / totalKg : 0;
-    setCurrentHardness(prevHardness => ({
-      ...prevHardness,
-      [batchNumber]: newHardness.toFixed(2) // Keeping two decimal points for hardness
-    }));
-  };
+  //   const newHardness = totalKg > 0 ? totalHardnessKg / totalKg : 0;
+  //   setCurrentHardness(prevHardness => ({
+  //     ...prevHardness,
+  //     [batchNumber]: newHardness.toFixed(2) // Keeping two decimal points for hardness
+  //   }));
+  // };
   
 
   // Remove the recalculateHardnessForBatch call from handleUserInputChange
   const handleUserInputChange = async (batchNumber, materialId, batchNo, value) => {
   
-    // Update the frontend state as before
+    const numericValue = value === '' ? 0 : parseFloat(value);
+    const sanitizedValue = isNaN(numericValue) ? 0 : Math.max(0, numericValue);
+
     setUserInputs(prevInputs => {
-      const updatedInputs = { ...prevInputs };
+      // Create a deep copy and update the specific value
+      const updatedInputs = JSON.parse(JSON.stringify(prevInputs));
       if (!updatedInputs[batchNumber]) updatedInputs[batchNumber] = {};
       if (!updatedInputs[batchNumber][materialId]) updatedInputs[batchNumber][materialId] = {};
-      updatedInputs[batchNumber][materialId][batchNo] = value;
+      updatedInputs[batchNumber][materialId][batchNo] = sanitizedValue.toString();
       return updatedInputs;
     });
   
     // Now, call the backend to update the database
+    updatePopOutInputs(activeMaterialId, batchNo, sanitizedValue);
+  };
+
+  const updatePopOutInputs = async(daily_material_formula_id, chemical_raw_material_batch_no, output_kg) => {
     try {
       const response = await axios.post('http://localhost:5000/update-output-in-popout', {
-        daily_material_formula_id: activeMaterialId,
-        chemical_raw_material_batch_no: batchNo,
-        output_kg: value,
+        daily_material_formula_id: daily_material_formula_id,
+        chemical_raw_material_batch_no: chemical_raw_material_batch_no,
+        output_kg: output_kg,
       });
       console.log('Backend response:', response.data);
     } catch (error) {
       console.error('Error updating output information:', error);
     }
+  }
+  //---FETCH POPout data usage kg---------------
+  // Helper function to find batchNumber and materialId by daily_material_formula_id
+  const findBatchAndMaterialId = (daily_material_formula_id, groupedDataaa) => {
+    for (const batchNumber in groupedDataaa) {
+      const batch = groupedDataaa[batchNumber];
+      const material = batch.materials.find(material => material.daily_material_formula_id === daily_material_formula_id);
+      if (material) {
+        return { batchNumber, materialId: material.chemical_raw_material_id };
+      }
+    }
+    return {};
   };
 
-  useEffect(() => {
-    if (selectedBatchNumber) { // Ensure there is a selected batch number
-      recalculateHardnessForBatch(selectedBatchNumber);
-    }
-  }, [userInputs, selectedBatchNumber, chemicalDetails]); // Dependencies array
-
   return (
+    isLoading ? 
+    // If isLoading is true, show a loading indicator
+    <div className="flex justify-center items-center h-screen">
+      <p>Loading...</p>
+    </div>
+    : 
     <div className="flex flex-col items-center mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <p className="text-2xl text-indigo-600 font-bold mb-6 mt-12">
         打料日期 {date}
@@ -594,7 +681,7 @@ export default function DailyMaterialDetail() {
                                     handleCheckboxChange(material.daily_material_formula_id, material.collecting_status);
                                   }
                                 }}
-                                className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                                className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 hover:border-indigo-500"
                                 // Optionally, disable the checkbox once it is checked to visually indicate that it can't be changed
                                 disabled={material.collecting_status}
                               />
@@ -618,13 +705,13 @@ export default function DailyMaterialDetail() {
                                   <div
                                     className="absolute z-50 bg-yellow-100 p-2 rounded shadow-md"
                                     style={{
-                                      width: '400px',
+                                      width: '410px',
                                       top: popOutPosition.y - 25,
                                       left: popOutPosition.x + 56,
                                     }}
                                   >
                                     <table className="min-w-full divide-y divide-gray-300">
-                                      <thead>
+                                      <thead> 
                                         <tr>
                                           <th className="px-1 py-3 text-left text-sm font-semibold text-gray-900">膠料批號</th>
                                           <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">位置</th>
@@ -639,7 +726,6 @@ export default function DailyMaterialDetail() {
                                           const isCollectingFinished = groupedData[selectedBatchNumber]?.materials.find(material =>
                                             material.chemical_raw_material_id === detail.chemical_raw_material_id && shouldDisplayMaterial(material.chemical_raw_material_id, '主膠領料單')
                                           )?.collecting_status;
-                                          const displayKg = userInputs[selectedBatchNumber]?.[material.chemical_raw_material_id]?.[detail.chemical_raw_material_batch_no] || '';
 
                                           return (
                                             <tr key={index}>
@@ -650,15 +736,10 @@ export default function DailyMaterialDetail() {
                                               <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <input
                                                   type="number"
-                                                  
                                                   disabled={isCollectingFinished}
                                                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                                  value={displayKg}
-                                                  onChange={(e) => {
-                                                    // Prevent negative numbers
-                                                    const value = Math.max(0, e.target.valueAsNumber);
-                                                    handleUserInputChange(selectedBatchNumber, material.chemical_raw_material_id, detail.chemical_raw_material_batch_no, value.toString());
-                                                  }}
+                                                  value={userInputs[selectedBatchNumber]?.[material.chemical_raw_material_id]?.[detail.chemical_raw_material_batch_no] || detail.usage_kg}
+                                                  onChange={(e) => handleUserInputChange(selectedBatchNumber, material.chemical_raw_material_id, detail.chemical_raw_material_batch_no, e.target.value)}                     
                                                   placeholder="輸入.."
                                                 />
                                               </td>

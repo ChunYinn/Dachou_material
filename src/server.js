@@ -690,7 +690,67 @@ app.get('/get-chemical-position/:batchNo', async (req, res) => {
   }
 });
 
+// Express route in your backend
+app.get('/get-all-output-data', async (req, res) => {
+  try {
+      const connection = await mysql.createConnection(dbConfig);
+      const sql = 'SELECT daily_material_formula_id, chemical_raw_material_batch_no, output_kg FROM chemical_daily_output';
+      const [rows] = await connection.execute(sql);
+      await connection.end();
 
+      res.json(rows);
+  } catch (error) {
+      console.error('Error fetching output data:', error);
+      res.status(500).send('Error fetching output data');
+  }
+});
+
+// Express route in your backend
+app.get('/get-output-data/:dailyMaterialId', async (req, res) => {
+  try {
+      const { dailyMaterialId } = req.params; // Get the dailyMaterialId from the URL parameters
+      const connection = await mysql.createConnection(dbConfig);
+      
+      // Update the SQL query to filter by daily_material_formula_id
+      const sql = 'SELECT daily_material_formula_id, chemical_raw_material_batch_no, output_kg FROM chemical_daily_output WHERE daily_material_formula_id = ?';
+      
+      // Use prepared statements to prevent SQL injection
+      const [rows] = await connection.execute(sql, [dailyMaterialId]);
+      
+      await connection.end();
+
+      res.json(rows);
+  } catch (error) {
+      console.error('Error fetching output data:', error);
+      res.status(500).send('Error fetching output data');
+  }
+});
+
+
+// Endpoint to clear output_kg for a given daily_material_formula_id
+app.post('/clear-output-kg-for-dailymaterialformulaid/:id', async (req, res) => {
+  const { id } = req.params; // Extract id from URL parameters
+
+  try {
+      const connection = await mysql.createConnection(dbConfig);
+      const sql = `
+          UPDATE chemical_daily_output
+          SET output_kg = 0
+          WHERE daily_material_formula_id = ?;
+      `;
+      const [result] = await connection.execute(sql, [id]);
+      await connection.end();
+
+      if (result.affectedRows > 0) {
+          res.json({ message: 'Output kg cleared successfully', affectedRows: result.affectedRows });
+      } else {
+          res.status(404).send({ message: 'Daily material formula ID not found' });
+      }
+  } catch (error) {
+      console.error('Error clearing output kg:', error);
+      res.status(500).send('Error clearing output kg');
+  }
+});
 
 //-------------膠料基本黨-----------------------------------------------
 // get rubber rile ms.stickness_value,
