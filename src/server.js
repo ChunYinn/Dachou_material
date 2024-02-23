@@ -993,6 +993,35 @@ app.get('/check-sequence-exists/:date/:sequence', async (req, res) => {
   }
 });
 
+app.get('/get-material-id/:batchNo', async (req, res) => {
+  const { batchNo } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    const sql = `
+    SELECT 
+      chemical_raw_material_id
+    FROM 
+      chemical_individual_input
+    WHERE 
+      chemical_raw_material_batch_no = ?
+    LIMIT 1;
+    `;
+
+    const [rows] = await connection.execute(sql, [batchNo]);
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.json(rows[0]); // Send the first (and should be only) row object to the frontend
+    } else {
+      res.status(404).send('No material ID found for the given batch number');
+    }    
+  } catch (error) {
+    console.error('Error fetching material ID:', error.message);
+    res.status(500).send('Error fetching material ID');
+  }
+});
 
 
 app.get('/check-material-id/:id', async (req, res) => {
@@ -1009,6 +1038,8 @@ app.get('/check-material-id/:id', async (req, res) => {
     res.status(500).send('Error checking material ID');
   }
 });
+
+
 
 app.get('/raw-material-id-suggestions/:prefix', async (req, res) => {
   const { prefix } = req.params;

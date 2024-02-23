@@ -23,6 +23,7 @@ export default function DailyMaterialDetail() {
   const [selectedRowId, setSelectedRowId] = useState(null);
   const [selectedBatchNumber, setSelectedBatchNumber] = useState('');
   const [activeMaterialId, setActiveMaterialId] = useState('');
+  const [chemicalMaterialId, setChemicalMaterialId] = useState('');
   const [chemicalDetails, setChemicalDetails] = useState([]);
   const [userInputs, setUserInputs] = useState({});
   const [currentHardness, setCurrentHardness] = useState({}); // State to store the current hardness
@@ -39,9 +40,10 @@ export default function DailyMaterialDetail() {
   };
 
   // Function to show the dialog when the icon is clicked
-  const handleIconClick = async(batchNumber, chemicalRawMaterialId, dailyMaterialId, event) => {
+  const handleIconClick = async(batchNumber, chemicalRawMaterialId, dailyMaterialId, event) => {    
     setSelectedBatchNumber(batchNumber);
     setActiveMaterialId(dailyMaterialId);
+    setChemicalMaterialId(chemicalRawMaterialId);
     console.log('Icon clicked:', batchNumber, chemicalRawMaterialId, dailyMaterialId);
     setSelectedRowId(dailyMaterialId); // Set the ID of the selected row
     const iconRect = event.currentTarget.getBoundingClientRect();
@@ -496,7 +498,7 @@ export default function DailyMaterialDetail() {
   const groupedDataEntries = Object.entries(groupedData);
 
   // Remove the recalculateHardnessForBatch call from handleUserInputChange
-  const handleUserInputChange = async (batchNumber, materialId, batchNo, value, maxKg) => {
+  const handleUserInputChange = async (batchNumber, batchNo, value, maxKg) => {
   
     const numericValue = value === '' ? 0 : parseFloat(value);
     const sanitizedValue = isNaN(numericValue) ? 0 : Math.max(0, numericValue);
@@ -505,6 +507,10 @@ export default function DailyMaterialDetail() {
       alert(`輸入值不能大於 ${maxKg}kg.`);
       return; // Exit the function without updating the inputs or the backend
     }
+    
+    const { materialId } = findBatchAndMaterialId(activeMaterialId, groupedData);
+
+    console.log('User input in input change:', batchNumber, materialId, batchNo, value, maxKg);
 
     setUserInputs(prevInputs => {
       // Create a deep copy and update the specific value
@@ -545,6 +551,65 @@ export default function DailyMaterialDetail() {
     }
     return {};
   };
+
+  //----hardness calculation--------------------------------
+  const recalculateHardnessForBatch = async (batchNumber) => {
+    let totalKg = 0;
+    let totalHardnessKg = 0;
+
+    if (!userInputs[batchNumber]) {
+        setCurrentHardness(prevHardness => ({
+            ...prevHardness,
+            [batchNumber]: "0.00"
+        }));
+        return;
+    }
+
+    // Map each batch to a fetch promise
+    const fetchPromises = Object.entries(userInputs[batchNumber]).flatMap(([chemicalId, batches]) =>
+        Object.entries(batches).map(async ([batchNo, kg]) => {
+          console.log('Batch:', batchNo, 'kg:', kg);
+            const kgParsed = parseFloat(kg);
+            if (isNaN(kgParsed) || kgParsed === 0) return null; // Skip if kg is not a number or zero
+
+            try {
+                const response = await axios.get(`http://localhost:5000/get-hardness-from-db/${batchNo}`);
+                const hardness = response.data.input_test_hardness;
+                // console.log('Hardness testing....:', hardness, kgParsed);
+                return { kg: kgParsed, hardness };
+            } catch (error) {
+                console.error('Error fetching hardness:', error);
+                return null;
+            }
+        })
+    );
+
+    // Wait for all fetch operations to complete
+    const results = await Promise.all(fetchPromises);
+
+    // Filter out null results and calculate totalKg and totalHardnessKg
+    results.filter(result => result !== null).forEach(({ kg, hardness }) => {
+        totalKg += kg;
+        totalHardnessKg += hardness * kg;
+    });
+
+    const newHardness = totalKg > 0 ? totalHardnessKg / totalKg : 0;
+    setCurrentHardness(prevHardness => ({
+        ...prevHardness,
+        [batchNumber]: newHardness.toFixed(2)
+    }));
+
+    console.log('--------------------------------------------------------');
+  };
+
+  useEffect(() => {
+    console.log('User inputs changed:', userInputs);
+    console.log('---------------------------------------');
+    if (selectedBatchNumber) { // Ensure there is a selected batch number
+      // console.log('Recalculating hardness for batch:', selectedBatchNumber);
+      recalculateHardnessForBatch(selectedBatchNumber);
+    }
+  }, [userInputs, selectedBatchNumber]);
 
   return (
     isLoading ? 
@@ -726,25 +791,29 @@ export default function DailyMaterialDetail() {
                                         </tr>
                                       </thead>
                                       <tbody className="bg-white divide-y divide-gray-200">
-                                        {chemicalDetails.map((detail, index) => {
+                                        {chemicalDetails.map((chemicaldetail, index) => {
                                           
                                           const isCollectingFinished = groupedData[selectedBatchNumber]?.materials.find(material =>
-                                            material.chemical_raw_material_id === detail.chemical_raw_material_id && shouldDisplayMaterial(material.chemical_raw_material_id, '主膠領料單')
+                                            material.chemical_raw_material_id === chemicaldetail.chemical_raw_material_id && shouldDisplayMaterial(material.chemical_raw_material_id, '主膠領料單')
                                           )?.collecting_status;
-
+                                          
                                           return (
                                             <tr key={index}>
-                                              <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_batch_no}</td>
-                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_position}</td>
-                                              <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{detail.input_test_hardness}</td>
-                                              <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{detail.batch_kg}</td>
+                                              <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.chemical_raw_material_batch_no}</td>
+                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.chemical_raw_material_position}</td>
+                                              <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.input_test_hardness}</td>
+                                              <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.batch_kg}</td>
                                               <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <input
                                                   type="number"
                                                   disabled={isCollectingFinished}
                                                   className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                                  value={userInputs[selectedBatchNumber]?.[material.chemical_raw_material_id]?.[detail.chemical_raw_material_batch_no] || detail.usage_kg}
-                                                  onChange={(e) => handleUserInputChange(selectedBatchNumber, material.chemical_raw_material_id, detail.chemical_raw_material_batch_no, e.target.value, detail.batch_kg)}                     
+                                                  value={
+                                                    userInputs[selectedBatchNumber]?.[
+                                                      chemicalMaterialId
+                                                    ]?.[chemicaldetail.chemical_raw_material_batch_no] || chemicaldetail.usage_kg
+                                                  }
+                                                  onChange={(e) => handleUserInputChange(selectedBatchNumber, chemicaldetail.chemical_raw_material_batch_no, e.target.value, chemicaldetail.batch_kg)}                     
                                                   placeholder="輸入.."
                                                 />
                                               </td>
