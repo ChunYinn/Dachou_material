@@ -278,6 +278,9 @@ const closeNotesDialog = () => {
                       <th scope="col" className="relative w-5 py-3.5 pl-3 pr-4 sm:pr-6">
                         <span className="sr-only">delete</span>
                       </th>
+                      <th scope="col" className="relative w-5 py-3.5 pl-3 pr-4 sm:pr-6">
+                        <span className="sr-only">history</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
