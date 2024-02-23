@@ -333,7 +333,6 @@ const closeNotesDialog = () => {
                                     }}
                                   >
                                   <table className="min-w-full divide-y divide-gray-300">
-                                    {/* Adjust table headers based on your data structure */}
                                     <thead>
                                       <tr>
                                         <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">化工原料 ID</th>
@@ -345,21 +344,21 @@ const closeNotesDialog = () => {
                                     <tbody className="bg-white divide-y divide-gray-200">
                                       {chemicalDetails.map((detail, index) => (
                                         <tr key={index}>
-                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_id}</td>
-                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_name}</td>
-                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.usage_kg}</td>
-                                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{detail.effective_stock}</td>
+                                          <td className="px-3 py-4 text-left whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_id}</td>
+                                          <td className="px-3 py-4 text-left whitespace-nowrap text-sm text-gray-500">{detail.chemical_raw_material_name}</td>
+                                          <td className="px-3 py-4 text-left whitespace-nowrap text-sm text-gray-500">{detail.usage_kg}</td>
+                                          <td className="px-3 py-4 text-left whitespace-nowrap text-sm text-gray-500">{detail.effective_stock}</td>
                                         </tr>
                                       ))}
                                     </tbody>
                                   </table>
                                   <div className="mt-4 flex justify-end">
-                              <button
-                                onClick={closeNotesDialog} // Now properly defined
-                                className="..."
-                              >
-                                Close
-                              </button>
+                                  <button
+                                    onClick={closeNotesDialog} // Now properly defined
+                                    className="inline-flex items-center justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                  >
+                                    Close
+                                  </button>
                             </div>
                           </div>
                         </div>
