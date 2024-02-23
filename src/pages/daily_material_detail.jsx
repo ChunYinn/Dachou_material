@@ -478,50 +478,50 @@ export default function DailyMaterialDetail() {
   const groupedDataEntries = Object.entries(groupedData);
 
   //----hardness calculation--------------------------------
-  const recalculateHardnessForBatch = async (batchNumber) => {
-    let totalKg = 0;
-    let totalHardnessKg = 0;
+  // const recalculateHardnessForBatch = async (batchNumber) => {
+  //   let totalKg = 0;
+  //   let totalHardnessKg = 0;
 
-    if (!userInputs[batchNumber]) {
-        setCurrentHardness(prevHardness => ({
-            ...prevHardness,
-            [batchNumber]: "0.00"
-        }));
-        return;
-    }
+  //   if (!userInputs[batchNumber]) {
+  //       setCurrentHardness(prevHardness => ({
+  //           ...prevHardness,
+  //           [batchNumber]: "0.00"
+  //       }));
+  //       return;
+  //   }
 
-    // Map each batch to a fetch promise
-    const fetchPromises = Object.entries(userInputs[batchNumber]).flatMap(([chemicalId, batches]) =>
-        Object.entries(batches).map(async ([batchNo, kg]) => {
-            const kgParsed = parseFloat(kg);
-            if (isNaN(kgParsed) || kgParsed === 0) return null; // Skip if kg is not a number or zero
+  //   // Map each batch to a fetch promise
+  //   const fetchPromises = Object.entries(userInputs[batchNumber]).flatMap(([chemicalId, batches]) =>
+  //       Object.entries(batches).map(async ([batchNo, kg]) => {
+  //           const kgParsed = parseFloat(kg);
+  //           if (isNaN(kgParsed) || kgParsed === 0) return null; // Skip if kg is not a number or zero
 
-            try {
-                const response = await axios.get(`http://localhost:5000/get-hardness-from-db/${batchNo}`);
-                const hardness = response.data.input_test_hardness;
-                return { kg: kgParsed, hardness };
-            } catch (error) {
-                console.error('Error fetching hardness:', error);
-                return null;
-            }
-        })
-    );
+  //           try {
+  //               const response = await axios.get(`http://localhost:5000/get-hardness-from-db/${batchNo}`);
+  //               const hardness = response.data.input_test_hardness;
+  //               return { kg: kgParsed, hardness };
+  //           } catch (error) {
+  //               console.error('Error fetching hardness:', error);
+  //               return null;
+  //           }
+  //       })
+  //   );
 
-    // Wait for all fetch operations to complete
-    const results = await Promise.all(fetchPromises);
+  //   // Wait for all fetch operations to complete
+  //   const results = await Promise.all(fetchPromises);
 
-    // Filter out null results and calculate totalKg and totalHardnessKg
-    results.filter(result => result !== null).forEach(({ kg, hardness }) => {
-        totalKg += kg;
-        totalHardnessKg += hardness * kg;
-    });
+  //   // Filter out null results and calculate totalKg and totalHardnessKg
+  //   results.filter(result => result !== null).forEach(({ kg, hardness }) => {
+  //       totalKg += kg;
+  //       totalHardnessKg += hardness * kg;
+  //   });
 
-    const newHardness = totalKg > 0 ? totalHardnessKg / totalKg : 0;
-    setCurrentHardness(prevHardness => ({
-        ...prevHardness,
-        [batchNumber]: newHardness.toFixed(2)
-    }));
-  };
+  //   const newHardness = totalKg > 0 ? totalHardnessKg / totalKg : 0;
+  //   setCurrentHardness(prevHardness => ({
+  //       ...prevHardness,
+  //       [batchNumber]: newHardness.toFixed(2)
+  //   }));
+  // };
 
     
 
@@ -542,9 +542,6 @@ export default function DailyMaterialDetail() {
   
     // Now, call the backend to update the database
     updatePopOutInputs(activeMaterialId, batchNo, sanitizedValue);
-
-    // Recalculate hardness for the batch after updating userInputs
-    recalculateHardnessForBatch(batchNumber);
   };
 
   // useEffect(() => {
