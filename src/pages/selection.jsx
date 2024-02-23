@@ -31,8 +31,8 @@ export default function Selection() {
         // Assuming response.data is the object with your data
         setDataCardInfo({
           notCollectedNo: `${response.data.notCollectedNo} 筆`,
-          totalKgToday: `${response.data.totalKgToday} kg`,
-          numberNeedingRestock: `${response.data.numberNeedingRestock}`
+          totalKgToday: response.data.totalKgToday ? `${response.data.totalKgToday} kg` : "今日無打料",
+          numberNeedingRestock: response.data.numberNeedingRestock ? `${response.data.numberNeedingRestock}` : "無需補貨化工"
         });
       })
       .catch(error => {
