@@ -758,16 +758,15 @@ app.post('/clear-output-kg-for-dailymaterialformulaid/:id', async (req, res) => 
       const [result] = await connection.execute(sql, [id]);
       await connection.end();
 
-      if (result.affectedRows > 0) {
-          res.json({ message: 'Output kg cleared successfully', affectedRows: result.affectedRows });
-      } else {
-          res.status(404).send({ message: 'Daily material formula ID not found' });
-      }
+      // Always return a success message, regardless of whether the ID was found
+      res.json({ message: 'Request completed successfully', affectedRows: result.affectedRows });
+      
   } catch (error) {
       console.error('Error clearing output kg:', error);
       res.status(500).send('Error clearing output kg');
   }
 });
+
 
 // Endpoint to get the hardness based on chemical_raw_material_batch_no
 app.get('/get-hardness-from-db/:batchNo', async (req, res) => {
