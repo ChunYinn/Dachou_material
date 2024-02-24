@@ -511,7 +511,8 @@ export default function DailyMaterialDetail() {
     const { materialId } = findBatchAndMaterialId(activeMaterialId, groupedData);
 
     console.log('User input in input change:', batchNumber, materialId, batchNo, value, maxKg);
-
+ 
+    
     setUserInputs(prevInputs => {
       // Create a deep copy and update the specific value
       const updatedInputs = JSON.parse(JSON.stringify(prevInputs));
