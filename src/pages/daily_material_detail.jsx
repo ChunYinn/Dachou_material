@@ -335,6 +335,8 @@ export default function DailyMaterialDetail() {
                 });
                 setUserInputs(newInputs);
 
+                
+
             } catch (error) {
                 console.error('Error fetching details or integrating output data:', error);
             }
@@ -353,7 +355,7 @@ export default function DailyMaterialDetail() {
 
         fetchData();
     }
-  }, []);
+  }, [date]);
 
   //Frontend: update collector
   const updateCollectorName = async (collectorName, type) => {
@@ -497,7 +499,7 @@ export default function DailyMaterialDetail() {
   //check whether there's data
   const groupedDataEntries = Object.entries(groupedData);
 
-  // Remove the recalculateHardnessForBatch call from handleUserInputChange
+  // handleUserInputChange
   const handleUserInputChange = async (batchNumber, batchNo, value, maxKg) => {
   
     const numericValue = value === '' ? 0 : parseFloat(value);
@@ -508,11 +510,8 @@ export default function DailyMaterialDetail() {
       return; // Exit the function without updating the inputs or the backend
     }
     
-    const { materialId } = findBatchAndMaterialId(activeMaterialId, groupedData);
+    const { materialId } = findBatchAndMaterialId(activeMaterialId, groupedData); 
 
-    console.log('User input in input change:', batchNumber, materialId, batchNo, value, maxKg);
- 
-    
     setUserInputs(prevInputs => {
       // Create a deep copy and update the specific value
       const updatedInputs = JSON.parse(JSON.stringify(prevInputs));
@@ -599,18 +598,23 @@ export default function DailyMaterialDetail() {
         ...prevHardness,
         [batchNumber]: newHardness.toFixed(2)
     }));
-
+    console.log('currentHardness:', currentHardness);
     console.log('--------------------------------------------------------');
   };
 
   useEffect(() => {
-    console.log('User inputs changed:', userInputs);
-    console.log('---------------------------------------');
-    if (selectedBatchNumber) { // Ensure there is a selected batch number
+    if (selectedBatchNumber && groupedData[selectedBatchNumber] && userInputs[selectedBatchNumber]) { // Ensure there is a selected batch number
       // console.log('Recalculating hardness for batch:', selectedBatchNumber);
       recalculateHardnessForBatch(selectedBatchNumber);
+    } else {
+      Object.keys(groupedData).forEach(batchNumber => {
+        if (groupedData[batchNumber] && userInputs[batchNumber]) {
+          console.log('Recalculating hardness for batch:', batchNumber);
+          recalculateHardnessForBatch(batchNumber);
+        }
+      });
     }
-  }, [userInputs, selectedBatchNumber]);
+  }, [userInputs, selectedBatchNumber, groupedData]);
 
   return (
     isLoading ? 
