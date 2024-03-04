@@ -9,7 +9,7 @@ const port = 5000;
 const dbConfig = {
   host: 'localhost',
   user: 'root',
-  password: '',
+  password: 'y778956',
   database: 'dachou_material'
 };
 
@@ -83,7 +83,7 @@ app.get('/material-stock-status/:materialAssignId', async (req, res) => {
     const sqlIsStockEnough = `
     SELECT
         CASE
-            WHEN SUM(CASE WHEN (cs.chemical_raw_material_current_stock - COALESCE(total_output.total_usage_kg, 0)) >= dmf.usage_kg THEN 0 ELSE 1 END) = 0 THEN TRUE
+            WHEN SUM(CASE WHEN (cs.chemical_raw_material_current_stock - COALESCE(total_output.total_usage_kg, 0)) >= 0 THEN 0 ELSE 1 END) = 0 THEN TRUE
             ELSE FALSE
         END AS is_stock_enough
     FROM
@@ -133,7 +133,7 @@ app.get('/material-stock-status/:materialAssignId', async (req, res) => {
         ) total_output ON dmf.chemical_raw_material_id = total_output.chemical_raw_material_id
     WHERE
         dmf.material_assign_id = ?
-        AND (cs.chemical_raw_material_current_stock - IFNULL(total_output.total_usage_kg, 0) < dmf.usage_kg OR cs.chemical_raw_material_current_stock IS NULL);
+        AND (cs.chemical_raw_material_current_stock - IFNULL(total_output.total_usage_kg, 0) < 0 OR cs.chemical_raw_material_current_stock IS NULL);
     `;
     const [insufficientStockDetails] = await connection.execute(sqlInsufficientStockDetails, [materialAssignId]);
 
