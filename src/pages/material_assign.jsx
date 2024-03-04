@@ -146,6 +146,7 @@ const closeNotesDialog = () => {
   };
 
   const handleUpdateClick = (assignmentData) => {
+    console.log(assignmentData);
     axios.put(`http://localhost:5000/update-material/${editingMaterial.material_assign_id}`, assignmentData)
       .then(() => {
         fetchMaterials();
@@ -436,10 +437,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
       alert("請填寫全部..");
       return;
     }
-  
-    // Convert selectedDate to the correct format if necessary
-    const formattedDate = selectedDate.add(8, 'hour').format('YYYY-MM-DD');
-  
+
     // First try-catch to check for the material existence
     try {
       const materialResponse = await axios.get(`http://localhost:5000/check-material-exists/${glueId}`);
@@ -455,7 +453,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
   
     // Second try-catch to check for the sequence existence
     try {
-      const sequenceResponse = await axios.get(`http://localhost:5000/check-sequence-exists/${formattedDate}/${order}`);
+      const sequenceResponse = await axios.get(`http://localhost:5000/check-sequence-exists/${selectedDate}/${order}`);
       if (sequenceResponse.data.exists) {
         alert("同天不能有重複的打料順序");
         return;
@@ -470,7 +468,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
     // If all checks pass, then proceed to submit the data
     try {
       const assignmentData = {
-        production_date: formattedDate,
+        production_date: selectedDate,
         material_id: glueId,
         total_demand: demand,
         production_sequence: order,
