@@ -143,7 +143,7 @@ const handleSearch = async () => {
   : 0.00;
 
   const totalPrice = materialTableData.length > 0
-  ? materialTableData.reduce((acc, item) => acc + parseFloat(item.unit_price), 0)
+  ? materialTableData.reduce((acc, item) => acc + parseFloat(item.unit_price * item.usage_kg), 0)
   : 0.00;
 
   // Format the totals to always show two decimal places
