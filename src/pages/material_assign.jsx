@@ -273,13 +273,13 @@ const closeNotesDialog = () => {
                       <th scope="col" className="px-3 py-3.5 text-left text-md font-semibold text-gray-900">
                         機台
                       </th>
-                      <th scope="col" className="w-5 px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      <th scope="col" className=" px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                         <span className="sr-only">update</span>
                       </th>
-                      <th scope="col" className="relative w-5 py-3.5 pl-3 pr-4 sm:pr-6">
+                      <th scope="col" className="py-3.5 pl-3 pr-4 sm:pr-6">
                         <span className="sr-only">delete</span>
                       </th>
-                      <th scope="col" className="relative w-5 py-3.5 pl-3 pr-4 sm:pr-6">
+                      <th scope="col" className="relative w-4 py-3.5 pl-3 pr-4 sm:pr-6">
                         <span className="sr-only">history</span>
                       </th>
                     </tr>
@@ -542,16 +542,16 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
           as={Fragment}
           enter="ease-out duration-300"
           enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
+          enterTo="opacity-150"
+          leave="ease-in duration-100"
+          leaveFrom="opacity-150"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-40 transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          <div className="flex min-h-full items-end justify-end p-4 text-center sm:items-center sm:p-0">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -561,11 +561,11 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+              <Dialog.Panel className={`relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all ${editingMaterial ? 'border-2 border-yellow-600' : 'border-2 border-green-600'}`} style={{width:"320px", marginRight:"10%"}}>
                 <div className="absolute top-0 right-0 hidden pt-4 pr-4 sm:block">
                   <button
                     type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500"
+                    className="rounded-md bg-white text-gray-400 hover:text-red-500"
                     onClick={() => onClose()}
                   >
                     <span className="sr-only">Close</span>
@@ -573,14 +573,8 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                   </button>
                 </div>
                 <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-green-500 sm:mx-0 sm:h-10 sm:w-10">
-                    {/* Icon or image here */}
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-white">
-                      <path fillRule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
-                    </svg>
-                  </div>
                   <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                    <Dialog.Title as="h3" className="text-lg font-bold leading-6 text-gray-900">
+                    <Dialog.Title as="h2" className="text-lg font-bold leading-6 text-gray-900">
                       {editingMaterial ? '編輯領料單' : '新增領料單'}
                     </Dialog.Title>
                     <div className="mt-9">
@@ -686,13 +680,13 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <div className="mt-6 sm:mt-4 sm:flex sm:flex-row-reverse">
                   <button
                     type="button"
-                    className="inline-flex w-full justify-center rounded-md bg-green-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
+                    className={`inline-flex w-full justify-center rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${editingMaterial ? 'bg-yellow-600 hover:bg-yellow-700 focus-visible:ring-yellow-500' : 'bg-green-500 hover:bg-green-600 focus-visible:ring-green-500'}`}
                     onClick={prepareDataAndSubmit}
                   >
-                    {editingMaterial ? '更改' : '新增'}
+                    {editingMaterial ? '編輯' : '新增'}
                   </button>
                 </div>
               </Dialog.Panel>
