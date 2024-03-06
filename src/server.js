@@ -9,7 +9,7 @@ const port = 5000;
 const dbConfig = {
   host: 'localhost',
   user: 'root',
-  password: 'y778956',
+  password: '',
   database: 'dachou_material'
 };
 
@@ -606,6 +606,7 @@ app.get('/get-chemical-input-detail/:id', async (req, res) => {
         chemical_raw_material_id, 
         chemical_raw_material_position,
         input_test_hardness,
+        supplier_material_batch_no,
         batch_kg
       FROM chemical_individual_input
       WHERE chemical_raw_material_id = ?

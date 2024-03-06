@@ -677,9 +677,9 @@ export default function DailyMaterialDetail() {
           onBlur={handleCollectorInputBlur}
         />
       </div>    
-      {/* ${!showNotesDialog && 'justify-center'} */}
+      {/* ${selectedButton !== '主膠領料單' && 'justify-center'} */}
       {groupedDataEntries.length > 0 ? (
-        <div className={`flex flex-wrap -mx-2 w-full mb-24 ${selectedButton !== '主膠領料單' && 'justify-center'}`}>
+        <div className={`flex flex-wrap -mx-2 w-full mb-24 justify-center`}>
           {groupedDataEntries.map(([batchNumber, details]) => {
             const filteredMaterials = details.materials.filter((material) =>
               shouldDisplayMaterial(material.chemical_raw_material_id, selectedButton)
@@ -772,61 +772,82 @@ export default function DailyMaterialDetail() {
                                   rows="1"
                                 />
                               {selectedButton === '主膠領料單' && (
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={(event) => handleIconClick(batchNumber, material.chemical_raw_material_id, material.daily_material_formula_id, event)}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={(event) => handleIconClick(batchNumber, material.chemical_raw_material_id, material.daily_material_formula_id, event)}>
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0-3.75-3.75M17.25 21 21 17.25" />
                                 </svg>
                               )}
                                 {showNotesDialog && (
                                   <div
                                     className="absolute z-50 bg-yellow-100 p-2 rounded shadow-md"
                                     style={{
-                                      width: '410px',
-                                      top: popOutPosition.y - 25,
-                                      left: popOutPosition.x + 56,
+                                      width: '535px',
+                                      top: popOutPosition.y + 55,
+                                      left: popOutPosition.x - 150,  
                                     }}
-                                  >
-                                    <table className="min-w-full divide-y divide-gray-300">
-                                      <thead> 
-                                        <tr>
-                                          <th className="px-1 py-3 text-left text-sm font-semibold text-gray-900">膠料批號</th>
-                                          <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">位置</th>
-                                          <th className="px-1 py-3 text-left text-sm font-semibold text-gray-900">硬度</th>
-                                          <th className="px-2 py-3 text-left text-sm font-semibold text-gray-900">剩餘公斤</th>
-                                          <th className="relative px-1 py-3 text-sm font-semibold text-gray-900">使用公斤</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody className="bg-white divide-y divide-gray-200">
-                                        {chemicalDetails.map((chemicaldetail, index) => {
-                                          
-                                          const isCollectingFinished = groupedData[selectedBatchNumber]?.materials.find(material =>
-                                            material.chemical_raw_material_id === chemicaldetail.chemical_raw_material_id && shouldDisplayMaterial(material.chemical_raw_material_id, '主膠領料單')
-                                          )?.collecting_status;
-                                          
-                                          return (
-                                            <tr key={index}>
-                                              <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.chemical_raw_material_batch_no}</td>
-                                              <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.chemical_raw_material_position}</td>
-                                              <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.input_test_hardness}</td>
-                                              <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.batch_kg}</td>
-                                              <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <input
-                                                  type="number"
-                                                  disabled={isCollectingFinished}
-                                                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                                  value={
-                                                    userInputs[selectedBatchNumber]?.[
-                                                      chemicalMaterialId
-                                                    ]?.[chemicaldetail.chemical_raw_material_batch_no] || chemicaldetail.usage_kg
-                                                  }
-                                                  onChange={(e) => handleUserInputChange(selectedBatchNumber, chemicaldetail.chemical_raw_material_batch_no, e.target.value, chemicaldetail.batch_kg)}                     
-                                                  placeholder="輸入.."
-                                                />
-                                              </td>
-                                            </tr>
-                                          );
-                                        })}
-                                      </tbody>
-                                    </table>
+                                  > 
+                                    <div className="custom-scrollbar" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                                      <style>
+                                        {`
+                                          .custom-scrollbar::-webkit-scrollbar {
+                                            width: 2px; /* Width of the scrollbar */
+                                          }
+                                          .custom-scrollbar::-webkit-scrollbar-track {
+                                            background: #f0f0f0; /* Color of the tracking area */
+                                          }
+                                          .custom-scrollbar::-webkit-scrollbar-thumb {
+                                            background-color: #888; /* Color of the scroll thumb */
+                                            border-radius: 1px; /* Roundness of the scroll thumb */
+                                          }
+                                          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                                            background: #555; /* Color of the scroll thumb when hovered */
+                                          }
+                                        `}
+                                      </style>
+                                      <table className="min-w-full divide-y divide-gray-300">
+                                        <thead> 
+                                          <tr>
+                                            <th className="px-1 py-3 text-left text-sm font-semibold text-gray-900">膠料批號</th>
+                                            <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">廠商批號</th>
+                                            <th className="px-3 py-3 text-left text-sm font-semibold text-gray-900">位置</th>                                          
+                                            <th className="px-1 py-3 text-left text-sm font-semibold text-gray-900">硬度</th>
+                                            <th className="px-2 py-3 text-left text-sm font-semibold text-gray-900">剩餘公斤</th>
+                                            <th className="relative px-4 py-3 text-sm font-semibold text-gray-900">使用公斤</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                          {chemicalDetails.map((chemicaldetail, index) => {
+                                            
+                                            const isCollectingFinished = groupedData[selectedBatchNumber]?.materials.find(material =>
+                                              material.chemical_raw_material_id === chemicaldetail.chemical_raw_material_id && shouldDisplayMaterial(material.chemical_raw_material_id, '主膠領料單')
+                                            )?.collecting_status;
+                                            
+                                            return (
+                                              <tr key={index}>
+                                                <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.chemical_raw_material_batch_no}</td>
+                                                <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.supplier_material_batch_no}</td>
+                                                <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.chemical_raw_material_position}</td>
+                                                <td className="px-1 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.input_test_hardness}</td>
+                                                <td className="px-2 py-4 whitespace-nowrap text-sm text-gray-500">{chemicaldetail.batch_kg}</td>
+                                                <td className="relative px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                  <input
+                                                    type="number"
+                                                    disabled={isCollectingFinished}
+                                                    className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                    value={
+                                                      userInputs[selectedBatchNumber]?.[
+                                                        chemicalMaterialId
+                                                      ]?.[chemicaldetail.chemical_raw_material_batch_no] || chemicaldetail.usage_kg
+                                                    }
+                                                    onChange={(e) => handleUserInputChange(selectedBatchNumber, chemicaldetail.chemical_raw_material_batch_no, e.target.value, chemicaldetail.batch_kg)}                     
+                                                    placeholder="輸入.."
+                                                  />
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>                                   
                                     <div className="mt-4 flex justify-end">
                                       <button
                                         className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
