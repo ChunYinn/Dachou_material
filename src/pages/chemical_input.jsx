@@ -79,8 +79,8 @@ export default function ChemicalInput() {
         </tr>
         <tr>
           <td style="border: 1px solid #000; padding: 5px;">
-            <span style="font-size: smaller;">颜色</span><br>
-            <span style="font-size: larger; font-weight: bold;">無</span>
+            <span style="font-size: smaller;">廠商批號</span><br>
+            <span style="font-size: larger; font-weight: bold;">${chemical.supplier_material_batch_no}</span>
           </td>
           <td style="border: 1px solid #000; padding: 5px;" colspan="2">
             <span style="font-size: smaller;">廠商</span><br>
