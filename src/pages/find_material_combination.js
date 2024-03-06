@@ -3,17 +3,25 @@ function cartesianProduct(arr) {
 }
 
 function findBestMaterialCombination(materials, formulaRequirements, targetHardness, batchNumber) {
+    // Process materials to include the 'material' key
     const validMaterialOptions = Object.keys(materials).map(material => 
         materials[material].map(option => ({ material, ...option }))
     );
 
+    // Generate all possible combinations of material options
     const allCombinations = cartesianProduct(validMaterialOptions);
+
+    // Separate combinations where all supplierBatches start with 'A'
+    const supplierBatchACombinations = allCombinations.filter(combination =>
+        combination.every(option => option.supplierBatch.startsWith('A'))
+    );
 
     let bestDiff = Infinity;
     let bestCombination = null;
     let finalAvgHardness = 0;
 
-    allCombinations.forEach(combination => {
+    // Function to evaluate each combination (refactored for reuse)
+    const evaluateCombination = (combination) => {
         const materialTotals = combination.reduce((acc, curr) => {
             acc[curr.material] = (acc[curr.material] || 0) + curr.kg;
             return acc;
@@ -25,8 +33,7 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
 
         if (meetsRequirements) {
             const totalHardness = combination.reduce((total, curr) => 
-                total + (curr.hardness * curr.kg), 0 // Note: Changed to use curr.kg for hardness calculation
-            );
+                total + (curr.hardness * curr.kg), 0);
             const totalKg = Object.values(materialTotals).reduce((total, kg) => total + kg, 0);
             const avgHardness = totalHardness / totalKg;
 
@@ -37,28 +44,39 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
                 finalAvgHardness = avgHardness;
             }
         }
-    });
+    };
 
+    // First, evaluate combinations where all supplierBatches start with 'A'
+    supplierBatchACombinations.forEach(evaluateCombination);
+
+    // If no suitable combination has been found yet, evaluate all combinations
+    if (!bestCombination) {
+        allCombinations.forEach(evaluateCombination);
+    }
+
+    // Output and return the best combination found, if any
     if (bestCombination) {
-        // Assumption: position is included in each material detail
-        const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness, position  }) => ({
+        const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness, position, supplierBatch }) => ({
             material, // Include the raw material ID
             batchNumber,
+            supplierBatch, // Include the supplierBatch identifier
             kg: formulaRequirements[material], // Use the kg requirement from formulaRequirements
             hardness,
             position,
         }));
-    
+
         return {
-            bestCombinationDetails, 
-            minimumHardnessDifference: parseFloat(bestDiff.toFixed(2)), 
+            bestCombinationDetails,
+            minimumHardnessDifference: parseFloat(bestDiff.toFixed(2)),
             finalAvgHardness: parseFloat(finalAvgHardness.toFixed(2)),
-            materialbBatchNumber: batchNumber
+            materialBatchNumber: batchNumber
         };
     } else {
         return { error: "無法使用單一原料完成, 請自行選取原料" };
     }
 }
+
+
 
 module.exports = { findBestMaterialCombination, cartesianProduct };
 // Example usage

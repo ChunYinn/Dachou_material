@@ -128,6 +128,7 @@ export default function DailyMaterialDetail() {
       const data = await response.json();
       return data.map(detail => ({
         batchNumber: detail.chemical_raw_material_batch_no,
+        supplierBatch: detail.supplier_material_batch_no,
         kg: parseFloat(detail.batch_kg),
         hardness: parseInt(detail.input_test_hardness, 10),
         position: detail.chemical_raw_material_position,
@@ -139,6 +140,12 @@ export default function DailyMaterialDetail() {
         acc[id] = materialDetails[index];
         return acc;
       }, {});
+
+      console.log('----------------------------------');
+      console.log('Materials:', materials);
+      console.log('Formula requirements:', formulaRequirements);
+      console.log('TARGET Hardness:', hardness);
+      console.log('Batch number:', batchNumber);
 
       const result = findBestMaterialCombination(materials, formulaRequirements, hardness, batchNumber);
       const parsedResult = result
@@ -171,7 +178,6 @@ export default function DailyMaterialDetail() {
         });
     
         const newUserInputs = { ...userInputs };
-        console.log('Current inputs:', newUserInputs); 
 
         // Check if there are any inputs for the given batchNumber
         if (newUserInputs[batchNumber]) {
@@ -191,7 +197,6 @@ export default function DailyMaterialDetail() {
             newUserInputs[batchNumber][detail.material][detail.batchNumber] = detail.kg.toString();
           });
 
-          console.log('New user inputs:', newUserInputs); 
           // Finally, update the userInputs state
           setUserInputs(newUserInputs);
         } else {
@@ -207,7 +212,6 @@ export default function DailyMaterialDetail() {
 
           // Set newUserInputs for the batchNumber with the newly created inputsForBatch
           const updatedUserInputs = { ...newUserInputs, [batchNumber]: inputsForBatch };
-          console.log('Updated user inputs for new batch number:', updatedUserInputs);
 
           // Update the userInputs state with the newly included batchNumber and its details
           setUserInputs(updatedUserInputs);
@@ -568,7 +572,6 @@ export default function DailyMaterialDetail() {
     // Map each batch to a fetch promise
     const fetchPromises = Object.entries(userInputs[batchNumber]).flatMap(([chemicalId, batches]) =>
         Object.entries(batches).map(async ([batchNo, kg]) => {
-          console.log('Batch:', batchNo, 'kg:', kg);
             const kgParsed = parseFloat(kg);
             if (isNaN(kgParsed) || kgParsed === 0) return null; // Skip if kg is not a number or zero
 
@@ -598,8 +601,6 @@ export default function DailyMaterialDetail() {
         ...prevHardness,
         [batchNumber]: newHardness.toFixed(2)
     }));
-    console.log('currentHardness:', currentHardness);
-    console.log('--------------------------------------------------------');
   };
 
   useEffect(() => {
@@ -609,7 +610,6 @@ export default function DailyMaterialDetail() {
     } else {
       Object.keys(groupedData).forEach(batchNumber => {
         if (groupedData[batchNumber] && userInputs[batchNumber]) {
-          console.log('Recalculating hardness for batch:', batchNumber);
           recalculateHardnessForBatch(batchNumber);
         }
       });
@@ -772,8 +772,8 @@ export default function DailyMaterialDetail() {
                                   rows="1"
                                 />
                               {selectedButton === '主膠領料單' && (
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={(event) => handleIconClick(batchNumber, material.chemical_raw_material_id, material.daily_material_formula_id, event)}>
-                                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0-3.75-3.75M17.25 21 21 17.25" />
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="ml-5 w-10 h-10 text-indigo-600 hover:text-indigo-500 rounded-full p-2 hover:bg-indigo-100" onClick={(event) => handleIconClick(batchNumber, material.chemical_raw_material_id, material.daily_material_formula_id, event)}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0-3.75-3.75M17.25 21 21 17.25" />
                                 </svg>
                               )}
                                 {showNotesDialog && (
