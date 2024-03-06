@@ -1,17 +1,13 @@
 import { Fragment, useState, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import TextField from '@mui/material/TextField';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { createTheme, ThemeProvider } from '@mui/material/styles'
 import { CalendarIcon } from '@heroicons/react/20/solid'; 
 import '../../src/index.css'
 
 export default function MaterialAssign() {
+  
   const navigate = useNavigate();
   // State for filters
   const [dateFilter, setDateFilter] = useState('');
@@ -65,6 +61,7 @@ const fetchStockStatus = (materialAssignId) => {
       console.error("Error fetching stock status", error);
     });
 };
+
 // Function to show the dialog with insufficient stock details
 const handleInsufficientStockClick = async (materialAssignId, event) => {
   setSelectedRowId(materialAssignId); // Now properly defined
@@ -400,24 +397,38 @@ const closeNotesDialog = () => {
 }
 
 function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState('');
   const [glueId, setGlueId] = useState('');
   const [demand, setDemand] = useState('');
   const [order, setOrder] = useState('');
   const [location, setLocation] = useState('內');
   const [materialIDSuggestions, setMaterialIDSuggestions] = useState([]);
 
-
-  const generateBatchNumber = (date, sequence) => {
-    const year = date.format('YY'); // Last two digits of the year
-    const monthDay = date.format('MMDD'); // Month and day
-    const formattedSequence = sequence.padStart(2, '0'); // Ensure sequence is two digits
-    return `${year}${monthDay}-${formattedSequence}`;
+  // Helper function to convert and log the date in Taipei time zone
+  const handleDateChange = (event) => {
+    const localDateStr = event.target.value; // YYYY-MM-DD from picker
+    console.log('selected date:', localDateStr);
+    setSelectedDate(localDateStr); // Keeping local format for display and state
   };
+
+  const generateBatchNumber = (dateStr, sequence) => {
+    // Split the date string into its components
+    const [year, month, day] = dateStr.split('-');
+    
+    // Extract last two digits of the year
+    const shortYear = year.substr(-2);
+    
+    // Format the sequence number, padding with leading zeros if necessary
+    const formattedSequence = sequence.toString().padStart(2, '0');
+  
+    // Combine parts into the batch number
+    return `${shortYear}${month}${day}-${formattedSequence}`;
+  };
+  
 
   useEffect(() => {
     if (!editingMaterial) {
-      setSelectedDate(null); // Reset date when adding a new material
+      setSelectedDate(''); // Reset date when adding a new material
       setGlueId('');
       setDemand('');
       setOrder('');
@@ -481,41 +492,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
       // Handle error appropriately
     }
   };
-  
-  
-  // Create a custom theme
-  const newTheme = createTheme({
-    components: {
-      // Your custom overrides
-      MuiPickersToolbar: {
-        styleOverrides: {
-          root: {
-            color: '#1565c0',
-            borderRadius: 2,
-            borderWidth: 1,
-            borderColor: '#2196f3',
-            border: '1px solid',
-            backgroundColor: '#bbdefb',
-          },
-        },
-      },
-      // Add other component overrides if needed
-    },
-  });
-
-  //date formatting
-  function convertToTaiwanDate(dateString) {
-    // Create a new Date object from the input string and add 8 hours for Taiwan time
-    const date = new Date(dateString);
-    date.setHours(date.getHours() + 8);
-  
-    // Format the date in yyyy-mm-dd format
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are zero-indexed
-    const day = date.getDate().toString().padStart(2, '0');
-  
-    return `${year}-${month}-${day}`;
-  }
+ 
   //Handle the input change and fetch suggestions
   const handleGlueIdChange = async (event) => {
     const inputValue = event.target.value;
@@ -586,21 +563,20 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                           <input
                             type="text"
                             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
-                            value={convertToTaiwanDate(editingMaterial.production_date)}
+                            value={editingMaterial.production_date}
                             readOnly
                           />
                         </div>
                       ) : (
-                      <ThemeProvider theme={newTheme}>
-                          <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                              label="打料日期"
-                              value={selectedDate}
-                              onChange={setSelectedDate}
-                              renderInput={(params) => <TextField {...params}  />}
-                            />
-                          </LocalizationProvider>
-                        </ThemeProvider>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">打料日期</label>
+                          <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={handleDateChange}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-600 focus:border-green-600 sm:text-sm"
+                          />
+                        </div>
                         )}
                       <div>
                         <label htmlFor="glue_id" className="block mt-3 text-sm font-bold leading-6 text-gray-900">
