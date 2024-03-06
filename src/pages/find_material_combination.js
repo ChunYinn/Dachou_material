@@ -1,27 +1,33 @@
+//一樣硬度會先選擇A開頭的批號，再選擇其他批號
+
 function cartesianProduct(arr) {
     return arr.reduce((a, b) => a.flatMap(d => b.map(e => [...d, e])), [[]]);
 }
 
 function findBestMaterialCombination(materials, formulaRequirements, targetHardness, batchNumber) {
-    // Process materials to include the 'material' key
-    const validMaterialOptions = Object.keys(materials).map(material => 
-        materials[material].map(option => ({ material, ...option }))
+    // Process materials to separate those with position starting with 'A' from others
+    const validMaterialOptionsA = Object.keys(materials).map(material => 
+        materials[material].filter(option => option.position.startsWith('A')).map(option => ({ material, ...option }))
+    );
+    const validMaterialOptionsOthers = Object.keys(materials).map(material => 
+        materials[material].filter(option => !option.position.startsWith('A')).map(option => ({ material, ...option }))
     );
 
-    // Generate all possible combinations of material options
-    const allCombinations = cartesianProduct(validMaterialOptions);
-
-    // Separate combinations where all supplierBatches start with 'A'
-    const supplierBatchACombinations = allCombinations.filter(combination =>
-        combination.every(option => option.supplierBatch.startsWith('A'))
+    // Combine 'A' position options with other options for full coverage, ensuring 'A' position options are first
+    const combinedMaterialOptions = validMaterialOptionsA.map((options, index) => 
+        [...options, ...validMaterialOptionsOthers[index]]
     );
+
+    // Generate all possible combinations of material options, prioritizing 'A' positions
+    const allCombinations = cartesianProduct(combinedMaterialOptions);
+    console.log('allCombinations:', allCombinations);
 
     let bestDiff = Infinity;
     let bestCombination = null;
     let finalAvgHardness = 0;
 
-    // Function to evaluate each combination (refactored for reuse)
-    const evaluateCombination = (combination) => {
+    // Evaluate each combination
+    allCombinations.forEach(combination => {
         const materialTotals = combination.reduce((acc, curr) => {
             acc[curr.material] = (acc[curr.material] || 0) + curr.kg;
             return acc;
@@ -44,25 +50,17 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
                 finalAvgHardness = avgHardness;
             }
         }
-    };
+    });
 
-    // First, evaluate combinations where all supplierBatches start with 'A'
-    supplierBatchACombinations.forEach(evaluateCombination);
-
-    // If no suitable combination has been found yet, evaluate all combinations
-    if (!bestCombination) {
-        allCombinations.forEach(evaluateCombination);
-    }
-
-    // Output and return the best combination found, if any
+    // Return the best combination found, if any
     if (bestCombination) {
         const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness, position, supplierBatch }) => ({
-            material, // Include the raw material ID
+            material,
             batchNumber,
             supplierBatch, // Include the supplierBatch identifier
             kg: formulaRequirements[material], // Use the kg requirement from formulaRequirements
             hardness,
-            position,
+            position, // Include the position identifier
         }));
 
         return {
@@ -72,37 +70,33 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
             materialBatchNumber: batchNumber
         };
     } else {
-        return { error: "無法使用單一原料完成, 請自行選取原料" };
+        return { error: "Unable to complete using a single material, please select materials manually." };
     }
 }
 
-
-
 module.exports = { findBestMaterialCombination, cartesianProduct };
-// Example usage
-// const materials = {
-//     'A': [
-//         {batchNumber: 'DH1024020801', kg: 90, hardness: 20},
-//         {batchNumber: 'DH1024020802', kg: 50, hardness: 30}
-//     ],
-//     'B': [
-//         {batchNumber: 'BH1024020801', kg: 70, hardness: 15},
-//         {batchNumber: 'BH1024020802', kg: 40, hardness: 25}
-//     ],
-//     'C': [
-//         {batchNumber: 'CH1024020801', kg: 60, hardness: 18},
-//         {batchNumber: 'CH1024020802', kg: 55, hardness: 22}
-//     ]
-// };
 
-// const formulaRequirements = {
-//     'A': 90,
-//     'B': 10,
-//     'C': 15
-// };
 
-// const targetHardness = 13;
 
-// // Call the function with the provided parameters
-// const result = findBestMaterialCombination(materials, formulaRequirements, targetHardness);
-// console.log(result);
+// How the Code Works:
+// Separating Material Options: The function will split each material's options into those where supplierBatch starts with 'A' and those that do not.
+
+// For example:
+
+// DD04 will have one list with {batchNumber: 'DD0424021902', supplierBatch: 'AAAA',...} (since it starts with 'A') and another with {batchNumber: 'DD0424021901', supplierBatch: 'SDFDS',...}.
+// DD11-Acc, DD50, and DD52 will have similar splits based on the supplierBatch.
+// Combining Material Options: The function combines the 'A' lists and the non-'A' lists while maintaining the priority for 'A' options. In our example, for DD04, DD11-Acc, DD50, and DD52, it places the options with supplierBatch starting with 'A' first.
+
+// Generating All Possible Combinations: It generates all possible combinations, but since 'A' options are first, combinations with more 'A' batches are generated earlier. This doesn't mean all materials in a combination will have 'A' batches; rather, combinations are explored with a preference for 'A' batches where possible.
+
+// Evaluating Combinations: The function evaluates each combination against the formula requirements and target hardness. For example, it will first check a combination like:
+
+// DD04: Option with supplierBatch 'AAAA'
+// DD11-Acc: Option with supplierBatch 'AAAA'
+// DD50: Option with supplierBatch 'A11111'
+// DD52: Option with supplierBatch 'A123'
+// It calculates the total and average hardness of this combination, checks if it meets the material kg requirements, and compares the average hardness to the target hardness.
+
+// Selecting the Best Combination: If a combination meets the formula requirements and is closest to the target hardness, it is marked as the best combination. The search continues, but now there's a benchmark (the best combination found so far).
+
+// Result: If a best combination is found, it is returned with details including supplierBatch. If no combination meeting the requirements is found, the error message is returned.
