@@ -1,33 +1,30 @@
-//一樣硬度會先選擇A開頭的批號，再選擇其他批號
-
 function cartesianProduct(arr) {
     return arr.reduce((a, b) => a.flatMap(d => b.map(e => [...d, e])), [[]]);
 }
 
+//based on position only positon:
+
 function findBestMaterialCombination(materials, formulaRequirements, targetHardness, batchNumber) {
-    // Process materials to separate those with position starting with 'A' from others
-    const validMaterialOptionsA = Object.keys(materials).map(material => 
-        materials[material].filter(option => option.position.startsWith('A')).map(option => ({ material, ...option }))
-    );
-    const validMaterialOptionsOthers = Object.keys(materials).map(material => 
-        materials[material].filter(option => !option.position.startsWith('A')).map(option => ({ material, ...option }))
+    // Process materials to include the 'material' key with all options
+    const validMaterialOptions = Object.keys(materials).map(material => 
+        materials[material].map(option => ({ material, ...option }))
     );
 
-    // Combine 'A' position options with other options for full coverage, ensuring 'A' position options are first
-    const combinedMaterialOptions = validMaterialOptionsA.map((options, index) => 
-        [...options, ...validMaterialOptionsOthers[index]]
-    );
+    // Generate all possible combinations of material options
+    const allCombinations = cartesianProduct(validMaterialOptions);
 
-    // Generate all possible combinations of material options, prioritizing 'A' positions
-    const allCombinations = cartesianProduct(combinedMaterialOptions);
-    console.log('allCombinations:', allCombinations);
-
+    let maxAPositions = 0;
     let bestDiff = Infinity;
     let bestCombination = null;
     let finalAvgHardness = 0;
+    let aCountMap = new Map();
 
     // Evaluate each combination
     allCombinations.forEach(combination => {
+        const aCount = combination.filter(opt => opt.position.startsWith('A')).length;
+        aCountMap.set(combination, aCount);
+        maxAPositions = Math.max(maxAPositions, aCount);
+        
         const materialTotals = combination.reduce((acc, curr) => {
             acc[curr.material] = (acc[curr.material] || 0) + curr.kg;
             return acc;
@@ -44,7 +41,7 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
             const avgHardness = totalHardness / totalKg;
 
             const diff = Math.abs(avgHardness - targetHardness);
-            if (diff < bestDiff) {
+            if (aCount === maxAPositions && diff < bestDiff) {
                 bestDiff = diff;
                 bestCombination = combination;
                 finalAvgHardness = avgHardness;
@@ -57,14 +54,15 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
         const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness, position, supplierBatch }) => ({
             material,
             batchNumber,
-            supplierBatch, // Include the supplierBatch identifier
-            kg: formulaRequirements[material], // Use the kg requirement from formulaRequirements
+            supplierBatch,
+            kg: formulaRequirements[material],
             hardness,
-            position, // Include the position identifier
+            position,
         }));
 
         return {
             bestCombinationDetails,
+            maximumAPositions: maxAPositions,
             minimumHardnessDifference: parseFloat(bestDiff.toFixed(2)),
             finalAvgHardness: parseFloat(finalAvgHardness.toFixed(2)),
             materialBatchNumber: batchNumber
@@ -74,11 +72,90 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
     }
 }
 
+
+
+
+
+
+//================================================================================================================================================================
+//一樣硬度會先選擇A開頭的批號，再選擇其他批號-----------------------------------------------------------------------
+
+
+// function findBestMaterialCombination(materials, formulaRequirements, targetHardness, batchNumber) {
+//     // Process materials to separate those with position starting with 'A' from others
+//     const validMaterialOptionsA = Object.keys(materials).map(material => 
+//         materials[material].filter(option => option.position.startsWith('A')).map(option => ({ material, ...option }))
+//     );
+//     const validMaterialOptionsOthers = Object.keys(materials).map(material => 
+//         materials[material].filter(option => !option.position.startsWith('A')).map(option => ({ material, ...option }))
+//     );
+
+//     // Combine 'A' position options with other options for full coverage, ensuring 'A' position options are first
+//     const combinedMaterialOptions = validMaterialOptionsA.map((options, index) => 
+//         [...options, ...validMaterialOptionsOthers[index]]
+//     );
+
+//     // Generate all possible combinations of material options, prioritizing 'A' positions
+//     const allCombinations = cartesianProduct(combinedMaterialOptions);
+//     console.log('allCombinations:', allCombinations);
+
+//     let bestDiff = Infinity;
+//     let bestCombination = null;
+//     let finalAvgHardness = 0;
+
+//     // Evaluate each combination
+//     allCombinations.forEach(combination => {
+//         const materialTotals = combination.reduce((acc, curr) => {
+//             acc[curr.material] = (acc[curr.material] || 0) + curr.kg;
+//             return acc;
+//         }, {});
+
+//         const meetsRequirements = Object.keys(formulaRequirements).every(material => 
+//             materialTotals[material] && materialTotals[material] >= formulaRequirements[material]
+//         );
+
+//         if (meetsRequirements) {
+//             const totalHardness = combination.reduce((total, curr) => 
+//                 total + (curr.hardness * curr.kg), 0);
+//             const totalKg = Object.values(materialTotals).reduce((total, kg) => total + kg, 0);
+//             const avgHardness = totalHardness / totalKg;
+
+//             const diff = Math.abs(avgHardness - targetHardness);
+//             if (diff < bestDiff) {
+//                 bestDiff = diff;
+//                 bestCombination = combination;
+//                 finalAvgHardness = avgHardness;
+//             }
+//         }
+//     });
+
+//     // Return the best combination found, if any
+//     if (bestCombination) {
+//         const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness, position, supplierBatch }) => ({
+//             material,
+//             batchNumber,
+//             supplierBatch, // Include the supplierBatch identifier
+//             kg: formulaRequirements[material], // Use the kg requirement from formulaRequirements
+//             hardness,
+//             position, // Include the position identifier
+//         }));
+
+//         return {
+//             bestCombinationDetails,
+//             minimumHardnessDifference: parseFloat(bestDiff.toFixed(2)),
+//             finalAvgHardness: parseFloat(finalAvgHardness.toFixed(2)),
+//             materialBatchNumber: batchNumber
+//         };
+//     } else {
+//         return { error: "Unable to complete using a single material, please select materials manually." };
+//     }
+// }
+//-----------------------------------------------------------------------
 module.exports = { findBestMaterialCombination, cartesianProduct };
 
 
 
-// How the Code Works:
+// How the Code Works (now not based on supplierBatch but based on position, so below should swap supplierBatch with position):
 // Separating Material Options: The function will split each material's options into those where supplierBatch starts with 'A' and those that do not.
 
 // For example:
