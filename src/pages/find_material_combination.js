@@ -5,26 +5,34 @@ function cartesianProduct(arr) {
 //based on position only positon:
 
 function findBestMaterialCombination(materials, formulaRequirements, targetHardness, batchNumber) {
-    // Process materials to include the 'material' key with all options
     const validMaterialOptions = Object.keys(materials).map(material => 
         materials[material].map(option => ({ material, ...option }))
     );
 
-    // Generate all possible combinations of material options
     const allCombinations = cartesianProduct(validMaterialOptions);
 
     let maxAPositions = 0;
+    const combinationsWithMaxA = [];
     let bestDiff = Infinity;
     let bestCombination = null;
     let finalAvgHardness = 0;
-    let aCountMap = new Map();
 
-    // Evaluate each combination
+    // First, identify the maximum number of 'A's and collect combinations that meet this criterion
     allCombinations.forEach(combination => {
         const aCount = combination.filter(opt => opt.position.startsWith('A')).length;
-        aCountMap.set(combination, aCount);
         maxAPositions = Math.max(maxAPositions, aCount);
-        
+    });
+
+    // Filter combinations to only those with the max number of 'A's
+    allCombinations.forEach(combination => {
+        const aCount = combination.filter(opt => opt.position.startsWith('A')).length;
+        if (aCount === maxAPositions) {
+            combinationsWithMaxA.push(combination);
+        }
+    });
+
+    // Then, evaluate these filtered combinations for the best hardness
+    combinationsWithMaxA.forEach(combination => {
         const materialTotals = combination.reduce((acc, curr) => {
             acc[curr.material] = (acc[curr.material] || 0) + curr.kg;
             return acc;
@@ -41,7 +49,7 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
             const avgHardness = totalHardness / totalKg;
 
             const diff = Math.abs(avgHardness - targetHardness);
-            if (aCount === maxAPositions && diff < bestDiff) {
+            if (diff < bestDiff) {
                 bestDiff = diff;
                 bestCombination = combination;
                 finalAvgHardness = avgHardness;
@@ -49,7 +57,7 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
         }
     });
 
-    // Return the best combination found, if any
+    // Construct the result from the best combination
     if (bestCombination) {
         const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness, position, supplierBatch }) => ({
             material,
@@ -71,9 +79,6 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
         return { error: "Unable to complete using a single material, please select materials manually." };
     }
 }
-
-
-
 
 
 
