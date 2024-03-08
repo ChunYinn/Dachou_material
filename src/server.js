@@ -626,6 +626,29 @@ app.get('/get-chemical-input-detail/:id', async (req, res) => {
   }
 });
 
+//for checking whether checkbox can be checked (there must be output kg >0)
+app.get('/sum-output-kg/:dailyMaterialFormulaId', async (req, res) => {
+  const { dailyMaterialFormulaId } = req.params;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = `
+      SELECT SUM(output_kg) AS totalOutputKg
+      FROM chemical_daily_output
+      WHERE daily_material_formula_id = ?;
+    `;
+    const [rows] = await connection.execute(sql, [dailyMaterialFormulaId]);
+    await connection.end();
+
+    // If there are no rows, or the sum is null, we consider totalOutputKg as 0
+    const totalOutputKg = rows[0]?.totalOutputKg || 0;
+    res.send({ totalOutputKg });
+  } catch (error) {
+    console.error('Error fetching total output kg:', error);
+    res.status(500).send('Error fetching total output kg');
+  }
+});
+
 //update the popout value and store in the database
 app.post('/update-output-in-popout', async (req, res) => {
   const { daily_material_formula_id, chemical_raw_material_batch_no, output_kg } = req.body;

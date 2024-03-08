@@ -58,6 +58,7 @@ export default function DailyMaterialDetail() {
       const response = await axios.get(`http://localhost:5000/get-chemical-input-detail/${chemicalRawMaterialId}`);
       // Integrate with userInputs to add usage_kg values
       let fetchedChemicalDetails = response.data;
+      console.log('Fetched chemical details:', fetchedChemicalDetails);
 
       const integratedChemicalDetails = integrateUserInputs(fetchedChemicalDetails, batchNumber);
       setChemicalDetails(integratedChemicalDetails);
@@ -426,10 +427,25 @@ export default function DailyMaterialDetail() {
     }
   };
   
-  const handleCheckboxChange = (id, currentStatus) => {
-    const newStatus = !currentStatus; // Toggle the status
-    updateCollectingStatus(id, newStatus);
+  const handleCheckboxChange = async (id, currentStatus) => {
+    try {
+      // Call the API endpoint to get the sum of output_kg
+      const response = await axios.get(`http://localhost:5000/sum-output-kg/${id}`);
+      const totalOutputKg = response.data.totalOutputKg;
+  
+      // Check if totalOutputKg is greater than 0
+      if (totalOutputKg > 0) {
+        const newStatus = !currentStatus; // Toggle the status
+        updateCollectingStatus(id, newStatus);
+      } else {
+        alert("請先輸入產量再勾選完成");
+      }
+    } catch (error) {
+      console.error('Error checking chemical raw material usage:', error);
+      alert("Error checking material usage.");
+    }
   };
+  
   
   //--UPDATE 備註-----------------------------------------------
   const updateNotesInGroupedData = (materialId, newNotes) => {
