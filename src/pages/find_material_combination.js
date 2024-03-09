@@ -76,7 +76,8 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
             materialBatchNumber: batchNumber
         };
     } else {
-        return { error: "Unable to complete using a single material, please select materials manually." };
+        // return { error: "Unable to complete using a single material, please select materials manually." };
+        return findBestMaterialCombinationByHardness(materials, formulaRequirements, targetHardness, batchNumber);
     }
 }
 
@@ -86,7 +87,7 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
 //一樣硬度會先選擇A開頭的批號，再選擇其他批號-----------------------------------------------------------------------
 
 
-// function findBestMaterialCombination(materials, formulaRequirements, targetHardness, batchNumber) {
+// function findBestMaterialCombinationAll(materials, formulaRequirements, targetHardness, batchNumber) {
 //     // Process materials to separate those with position starting with 'A' from others
 //     const validMaterialOptionsA = Object.keys(materials).map(material => 
 //         materials[material].filter(option => option.position.startsWith('A')).map(option => ({ material, ...option }))
@@ -156,6 +157,65 @@ function findBestMaterialCombination(materials, formulaRequirements, targetHardn
 //     }
 // }
 //-----------------------------------------------------------------------
+//================================================================================================================================================================
+// based on hardness only:
+function findBestMaterialCombinationByHardness(materials, formulaRequirements, targetHardness, batchNumber) {
+    const validMaterialOptions = Object.keys(materials).map(material => 
+        materials[material].map(option => ({ material, ...option }))
+    );
+
+    const allCombinations = cartesianProduct(validMaterialOptions);
+
+    let bestDiff = Infinity;
+    let bestCombination = null;
+    let finalAvgHardness = 0;
+
+    allCombinations.forEach(combination => {
+        const materialTotals = combination.reduce((acc, curr) => {
+            acc[curr.material] = (acc[curr.material] || 0) + curr.kg;
+            return acc;
+        }, {});
+
+        const meetsRequirements = Object.keys(formulaRequirements).every(material => 
+            materialTotals[material] && materialTotals[material] >= formulaRequirements[material]
+        );
+
+        if (meetsRequirements) {
+            const totalHardness = combination.reduce((total, curr) => 
+                total + (curr.hardness * curr.kg), 0 // Note: Changed to use curr.kg for hardness calculation
+            );
+            const totalKg = Object.values(materialTotals).reduce((total, kg) => total + kg, 0);
+            const avgHardness = totalHardness / totalKg;
+
+            const diff = Math.abs(avgHardness - targetHardness);
+            if (diff < bestDiff) {
+                bestDiff = diff;
+                bestCombination = combination;
+                finalAvgHardness = avgHardness;
+            }
+        }
+    });
+
+    if (bestCombination) {
+        // Assumption: position is included in each material detail
+        const bestCombinationDetails = bestCombination.map(({ material, batchNumber, hardness, position  }) => ({
+            material, // Include the raw material ID
+            batchNumber,
+            kg: formulaRequirements[material], // Use the kg requirement from formulaRequirements
+            hardness,
+            position,
+        }));
+    
+        return {
+            bestCombinationDetails, 
+            minimumHardnessDifference: parseFloat(bestDiff.toFixed(2)), 
+            finalAvgHardness: parseFloat(finalAvgHardness.toFixed(2)),
+            materialbBatchNumber: batchNumber
+        };
+    } else {
+        return { error: "無法使用單一原料完成, 請自行選取原料" };
+    }
+}
 module.exports = { findBestMaterialCombination, cartesianProduct };
 
 
