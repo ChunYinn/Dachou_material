@@ -945,14 +945,13 @@ export default function DailyMaterialDetail() {
 
 
 function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
-
   const [selectedRowsIndex, setSelectedRowsIndex] = useState([]);
 
   const toggleRowHighlight = (index) => {
     if (selectedRowsIndex.includes(index)) {
-        setSelectedRowsIndex(selectedRowsIndex.filter(item => item !== index));
+      setSelectedRowsIndex(selectedRowsIndex.filter(item => item !== index));
     } else {
-        setSelectedRowsIndex([...selectedRowsIndex, index]);
+      setSelectedRowsIndex([...selectedRowsIndex, index]);
     }
   };
 
@@ -986,7 +985,7 @@ function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
                   <div className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
                     <div className="px-4 py-6 sm:px-6">
                       <div className="flex items-start justify-between">
-                      <Dialog.Title className="text-xl font-bold text-gray-900 text-center">領料統計</Dialog.Title>
+                        <Dialog.Title className="text-xl font-bold text-gray-900 text-center">領料統計</Dialog.Title>
                         <div className="ml-3 h-7 flex items-center">
                           <button
                             type="button"
@@ -999,11 +998,11 @@ function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
                         </div>
                       </div>
                     </div>
-                    <div className="relative flex-1 px-4 sm:px-6">
+                    <div className="relative flex-1 p-4 sm:px-6">
                       {/* Content goes here */}
                       {chemicalStatistics.length > 0 ? (
-                        <div className="absolute inset-0 p-4 sm:px-6">
-                          <div className="h-full border-2 border-gray-200 border-dashed rounded-lg p-4">
+                        <div className="overflow-y-auto" style={{ maxHeight: '75vh' }}>
+                          <div className="border-2 border-gray-200 border-dashed rounded-lg p-4">
                             <table className="min-w-full divide-y divide-gray-200">
                               <thead className="bg-gray-100">
                                 <tr>
@@ -1026,8 +1025,8 @@ function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
                                   <tr
                                     key={index}
                                     className={`${
-                                      selectedRowsIndex.includes(index) ? 'bg-yellow-100' : 'bg-white'
-                                    } hover:bg-yellow-100 cursor-pointer`}
+                                      selectedRowsIndex.includes(index) ? 'bg-yellow-200' : 'bg-white'
+                                    } hover:bg-yellow-300 cursor-pointer`}
                                     onClick={() => toggleRowHighlight(index)}
                                   >
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.chemical_raw_material_batch_no}</td>
@@ -1042,7 +1041,7 @@ function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
                         </div>
                       ) : (
                         <div className="px-4 py-3 text-center sm:px-6">
-                          請確保已輸入每個原料用量
+                          No data available
                         </div>
                       )}
                     </div>
