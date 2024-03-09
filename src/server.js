@@ -1056,6 +1056,8 @@ app.get('/check-sequence-exists/:date/:sequence', async (req, res) => {
     const [rows] = await connection.execute(query, [date, sequence]);
     await connection.end();
 
+    console.log('rows:', rows);
+
     // The sequence exists if the count is greater than 0
     const exists = rows[0].count > 0;
     res.json({ exists });

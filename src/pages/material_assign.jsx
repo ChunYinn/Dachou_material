@@ -404,6 +404,21 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
   const [location, setLocation] = useState('內');
   const [materialIDSuggestions, setMaterialIDSuggestions] = useState([]);
 
+  function convertUTCToTaipeiTime(utcDate) {
+    // Convert the UTC date string to a Date object
+    const date = new Date(utcDate);
+
+    // Add 8 hours for Taipei time zone offset
+    date.setHours(date.getHours() + 8);
+
+    // Format the date as a string in the desired format
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
   // Helper function to convert and log the date in Taipei time zone
   const handleDateChange = (event) => {
     const localDateStr = event.target.value; // YYYY-MM-DD from picker
@@ -463,18 +478,21 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
     }
   
     // Second try-catch to check for the sequence existence
-    try {
-      const sequenceResponse = await axios.get(`http://localhost:5000/check-sequence-exists/${selectedDate}/${order}`);
-      if (sequenceResponse.data.exists) {
-        alert("同天不能有重複的打料順序");
+    if (!editingMaterial) {
+      try {
+        const sequenceResponse = await axios.get(`http://localhost:5000/check-sequence-exists/${selectedDate}/${order}`);
+        if (sequenceResponse.data.exists) {
+          alert("同天不能有重複的打料順序");
+          return;
+        }
+        // Continue with assignment submission...
+      } catch (error) {
+        console.error('Error checking sequence existence:', error);
+        // Handle error appropriately
         return;
       }
-      // Continue with assignment submission...
-    } catch (error) {
-      console.error('Error checking sequence existence:', error);
-      // Handle error appropriately
-      return;
     }
+    
   
     // If all checks pass, then proceed to submit the data
     try {
@@ -486,6 +504,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
         production_machine: location,
         batch_number: editingMaterial ? editingMaterial.batch_number : generateBatchNumber(selectedDate, order)
       };
+      console.log('assignmentData:', assignmentData);
       onSubmit(assignmentData);
     } catch (error) {
       console.error('Error submitting material assignment:', error);
@@ -563,7 +582,7 @@ function DialogComponent({ isOpen, onClose, onSubmit, editingMaterial }) {
                           <input
                             type="text"
                             className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 sm:text-sm sm:leading-6"
-                            value={editingMaterial.production_date}
+                            value={convertUTCToTaipeiTime(editingMaterial.production_date)}
                             readOnly
                           />
                         </div>
