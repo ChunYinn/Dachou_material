@@ -486,6 +486,54 @@ app.get('/get-material-detail/:date', async (req, res) => {
   }
 });
 
+//for 統計用量
+app.get('/get-chemical-output-detail-by-batch-date/:date', async (req, res) => {
+  const selectedDate = req.params.date;
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+
+    // Convert selectedDate from yyyy-mm-dd to yymmdd format as part of the batch_number
+    const dateParts = selectedDate.split('-');
+    const formattedDatePart = `${dateParts[0].substring(2)}${dateParts[1]}${dateParts[2]}`;
+
+    // SQL query to get the total output kg for each chemical batch where batch_number contains the date part
+    const sql = `
+      SELECT 
+          cdo.chemical_raw_material_batch_no,
+          dmf.chemical_raw_material_id,
+          cii.chemical_raw_material_position,
+          SUM(cdo.output_kg) AS total_output_kg
+      FROM 
+          material_assignments ma
+      JOIN 
+          daily_material_formula dmf ON ma.material_assign_id = dmf.material_assign_id
+      JOIN 
+          chemical_daily_output cdo ON dmf.daily_material_formula_id = cdo.daily_material_formula_id
+      LEFT JOIN 
+          chemical_individual_input cii ON cdo.chemical_raw_material_batch_no = cii.chemical_raw_material_batch_no
+      WHERE 
+          ma.batch_number LIKE CONCAT(?, '%')
+      GROUP BY 
+          cdo.chemical_raw_material_batch_no, dmf.chemical_raw_material_id, cii.chemical_raw_material_position
+      HAVING 
+          SUM(cdo.output_kg) > 0;
+    `;
+
+    // Execute the query with the formatted date part
+    const [rows] = await connection.execute(sql, [formattedDatePart]);
+
+    // Close the connection
+    await connection.end();
+
+    // Send the data back to the client
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching chemical output details based on batch date:', error.message);
+    res.status(500).send('Error fetching chemical output details based on batch date');
+  }
+});
+
+
 // fetch collector name
 app.get('/get-collector-names/:date', async (req, res) => {
   const { date } = req.params;

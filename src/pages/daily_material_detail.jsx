@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Fragment } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import { Dialog, Transition } from '@headlessui/react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+
 // In another file where you want to use the above functions
 const { findBestMaterialCombination} = require('./find_material_combination');
 
@@ -28,6 +31,10 @@ export default function DailyMaterialDetail() {
   const [userInputs, setUserInputs] = useState({});
   const [currentHardness, setCurrentHardness] = useState({}); // State to store the current hardness
   const [isLoading, setIsLoading] = useState(true);
+
+  //for 統計
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [chemicalStatistics, setChemicalStatistics] = useState([]);
 
   const integrateUserInputs = (fetchedChemicalDetails, batchNumber) => {
     return fetchedChemicalDetails.map(detail => {
@@ -142,11 +149,11 @@ export default function DailyMaterialDetail() {
         return acc;
       }, {});
 
-      console.log('----------------------------------');
-      console.log('Materials:', materials);
-      console.log('Formula requirements:', formulaRequirements);
-      console.log('TARGET Hardness:', hardness);
-      console.log('Batch number:', batchNumber);
+      // console.log('----------------------------------');
+      // console.log('Materials:', materials);
+      // console.log('Formula requirements:', formulaRequirements);
+      // console.log('TARGET Hardness:', hardness);
+      // console.log('Batch number:', batchNumber);
 
       const result = findBestMaterialCombination(materials, formulaRequirements, hardness, batchNumber);
       const parsedResult = result
@@ -295,6 +302,7 @@ export default function DailyMaterialDetail() {
             try {
                 const materialDetailsResponse = await axios.get(`http://localhost:5000/get-material-detail/${date}`);
                 const fetchedData = materialDetailsResponse.data;
+                console.log('Fetched data:', fetchedData);
 
                 // Fetch output data
                 const outputDataResponse = await axios.get('http://localhost:5000/get-all-output-data');
@@ -632,6 +640,24 @@ export default function DailyMaterialDetail() {
     }
   }, [userInputs, selectedBatchNumber, groupedData]);
 
+  //for 統計
+  const handleStatisticsButtonClick = async (selectedDate) => {
+    // Close the dialog first
+    closeNotesDialog();
+    setIsPanelOpen(true);
+
+    try {
+        // Fetch the chemical output details from the backend
+        const response = await axios.get(`http://localhost:5000/get-chemical-output-detail-by-batch-date/${selectedDate}`); // Replace PORT with your actual server port
+        setChemicalStatistics(response.data);
+        console.log('Fetched chemical output details:', response.data);
+
+    } catch (error) {
+        console.error('Error fetching chemical output details:', error);
+        setChemicalStatistics([]);
+    }
+  };
+
   return (
     isLoading ? 
     // If isLoading is true, show a loading indicator
@@ -677,22 +703,32 @@ export default function DailyMaterialDetail() {
         )}
       </div>
       
-      <div className='flex items-center mb-5'>
-        <label htmlFor="collector" className="text-md font-bold text-gray-700">
-          {selectedButton === '促進劑領料單' ? '促進劑領料人:' : '主膠領料人:'}
-        </label>
-        <input
-          id="collector"
-          name="collector"
-          type="text"
-          required
-          className="ml-2 p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          placeholder="完成請輸入名稱"
-          value={selectedButton === '促進劑領料單' ? promoterCollector : mainGlueCollector}
-          onChange={handleCollectorInputChange}
-          onBlur={handleCollectorInputBlur}
-        />
-      </div>    
+      <div className='flex items-center mb-5 space-x-3'>
+          <label htmlFor="collector" className="text-md font-bold text-gray-700">
+            {selectedButton === '促進劑領料單' ? '促進劑領料人:' : '主膠領料人:'}
+          </label>
+          <input
+            id="collector"
+            name="collector"
+            type="text"
+            required
+            className="ml-2 p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="完成請輸入名稱"
+            value={selectedButton === '促進劑領料單' ? promoterCollector : mainGlueCollector}
+            onChange={handleCollectorInputChange}
+            onBlur={handleCollectorInputBlur}
+          />
+          {selectedButton !== '促進劑領料單' && (
+            <button
+            type="button"
+            className="ml-5 inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-md font-bold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            onClick={() => handleStatisticsButtonClick(date)}
+            >
+              領料統計
+            </button>
+          )}          
+      </div>
+   
       {/* ${selectedButton !== '主膠領料單' && 'justify-center'} */}
       {groupedDataEntries.length > 0 ? (
         <div className={`flex flex-wrap -mx-2 w-full mb-24 justify-center`}>
@@ -897,6 +933,126 @@ export default function DailyMaterialDetail() {
           <p className="text-lg text-gray-500">無資料</p>
         </div>
       )}
+
+      <ChemicalDetailsPanel
+        isOpen={isPanelOpen}
+        onClose={() => setIsPanelOpen(false)}
+        chemicalStatistics={chemicalStatistics}
+      />
     </div>
   );
 }  
+
+
+function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
+
+  const [selectedRowsIndex, setSelectedRowsIndex] = useState([]);
+
+  const toggleRowHighlight = (index) => {
+    if (selectedRowsIndex.includes(index)) {
+        setSelectedRowsIndex(selectedRowsIndex.filter(item => item !== index));
+    } else {
+        setSelectedRowsIndex([...selectedRowsIndex, index]);
+    }
+  };
+
+  return (
+    <Transition.Root show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-10" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+        </Transition.Child>
+        <div className="fixed inset-0 overflow-hidden">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+              <Transition.Child
+                as={Fragment}
+                enter="transform transition ease-in-out duration-500 sm:duration-700"
+                enterFrom="translate-x-full"
+                enterTo="translate-x-0"
+                leave="transform transition ease-in-out duration-500 sm:duration-700"
+                leaveFrom="translate-x-0"
+                leaveTo="translate-x-full"
+              >
+                <Dialog.Panel className="pointer-events-auto w-screen max-w-lg">
+                  <div className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
+                    <div className="px-4 py-6 sm:px-6">
+                      <div className="flex items-start justify-between">
+                      <Dialog.Title className="text-xl font-bold text-gray-900 text-center">領料統計</Dialog.Title>
+                        <div className="ml-3 h-7 flex items-center">
+                          <button
+                            type="button"
+                            className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            onClick={onClose}
+                          >
+                            <span className="sr-only">Close panel</span>
+                            <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative flex-1 px-4 sm:px-6">
+                      {/* Content goes here */}
+                      {chemicalStatistics.length > 0 ? (
+                        <div className="absolute inset-0 p-4 sm:px-6">
+                          <div className="h-full border-2 border-gray-200 border-dashed rounded-lg p-4">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-100">
+                                <tr>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    化工批號
+                                  </th>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    化工原料ID
+                                  </th>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    位子
+                                  </th>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    總用量(kg)
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {chemicalStatistics.map((stat, index) => (
+                                  <tr
+                                    key={index}
+                                    className={`${
+                                      selectedRowsIndex.includes(index) ? 'bg-yellow-100' : 'bg-white'
+                                    } hover:bg-yellow-100 cursor-pointer`}
+                                    onClick={() => toggleRowHighlight(index)}
+                                  >
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.chemical_raw_material_batch_no}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.chemical_raw_material_id}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.chemical_raw_material_position || 'N/A'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.total_output_kg} kg</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3 text-center sm:px-6">
+                          請確保已輸入每個原料用量
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </div>
+      </Dialog>
+    </Transition.Root>
+  );
+}
