@@ -981,7 +981,7 @@ function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
                 leaveFrom="translate-x-0"
                 leaveTo="translate-x-full"
               >
-                <Dialog.Panel className="pointer-events-auto w-screen max-w-lg">
+                <Dialog.Panel className="pointer-events-auto w-screen max-w-4xl">
                   <div className="flex h-full flex-col divide-y divide-gray-200 bg-white shadow-xl">
                     <div className="px-4 py-6 sm:px-6">
                       <div className="flex items-start justify-between">
@@ -1010,7 +1010,13 @@ function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
                                     化工批號
                                   </th>
                                   <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    廠商批號
+                                  </th>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                     化工原料ID
+                                  </th>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                    化工原料名稱
                                   </th>
                                   <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                     位子
@@ -1030,7 +1036,9 @@ function ChemicalDetailsPanel({ isOpen, onClose, chemicalStatistics }) {
                                     onClick={() => toggleRowHighlight(index)}
                                   >
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.chemical_raw_material_batch_no}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.supplier_material_batch_no}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.chemical_raw_material_id}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.chemical_raw_material_name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.chemical_raw_material_position || 'N/A'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{stat.total_output_kg} kg</td>
                                   </tr>

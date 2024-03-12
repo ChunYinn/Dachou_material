@@ -502,6 +502,8 @@ app.get('/get-chemical-output-detail-by-batch-date/:date', async (req, res) => {
           cdo.chemical_raw_material_batch_no,
           dmf.chemical_raw_material_id,
           cii.chemical_raw_material_position,
+          cii.supplier_material_batch_no,
+          rrmf.chemical_raw_material_name,
           SUM(cdo.output_kg) AS total_output_kg
       FROM 
           material_assignments ma
@@ -511,12 +513,15 @@ app.get('/get-chemical-output-detail-by-batch-date/:date', async (req, res) => {
           chemical_daily_output cdo ON dmf.daily_material_formula_id = cdo.daily_material_formula_id
       LEFT JOIN 
           chemical_individual_input cii ON cdo.chemical_raw_material_batch_no = cii.chemical_raw_material_batch_no
+      LEFT JOIN
+          rubber_raw_material_file rrmf ON cii.chemical_raw_material_id = rrmf.chemical_raw_material_id -- Added join
       WHERE 
           ma.batch_number LIKE CONCAT(?, '%')
       GROUP BY 
-          cdo.chemical_raw_material_batch_no, dmf.chemical_raw_material_id, cii.chemical_raw_material_position
+          cdo.chemical_raw_material_batch_no, dmf.chemical_raw_material_id, cii.chemical_raw_material_position, cii.supplier_material_batch_no, rrmf.chemical_raw_material_name -- Updated GROUP BY
       HAVING 
           SUM(cdo.output_kg) > 0;
+
     `;
 
     // Execute the query with the formatted date part
