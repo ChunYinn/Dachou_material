@@ -25,15 +25,13 @@ export default function MaterialSearchAdd() {
   
   const [materialData, setMaterialData] = useState(initialData);
   const [materialTableData, setMaterialTableData] = useState([]);
+  const [searchSuccess, setSearchSuccess] = useState(false);
+  const [lastSearchedId, setLastSearchedId] = useState('');
   //------新增toggle-----------------------------
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   //------搜尋推薦--------------------------------
   const [suggestions, setSuggestions] = useState([]);
  
-
-
-
-
   const toggleDialog = () => {
     setIsDialogOpen(!isDialogOpen);
     setSuggestions([]);
@@ -92,50 +90,79 @@ export default function MaterialSearchAdd() {
   
   };
   
+  const handleDeleteClick = async () => {
+    if (!lastSearchedId) {
+      alert('請先進行有效搜尋後再刪除');
+      return;
+    }
+
+    const isConfirmed = window.confirm(`確定要刪除膠料: ${lastSearchedId} 嗎？`);
+    if (!isConfirmed) {
+      return;
+    }
+  
+    try {
+      const responseFormula = await axios.delete(`http://localhost:5000/delete-rubber-formula/${lastSearchedId}`);
+      if (responseFormula.status === 200) {
+        const responseRubber = await axios.delete(`http://localhost:5000/delete-rubber/${lastSearchedId}`);
+        if (responseRubber.status === 200) {
+          window.location.reload(); // Refresh the page to reflect the changes
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting material:', error);
+      alert('刪除失敗: ' + error.message);
+    }
+  };
   
   
 
-// Event handler for the search button
-const handleSearch = async () => {
-  if (!searchInput) {
-    setMaterialData(initialData);
-    setMaterialTableData([]);
-    window.alert('請輸入膠料編號'); // Alert if searchInput is empty
-    return;
-  }
-
-  // Perform both API calls concurrently using searchInput
-  try {
-    const infoResponsePromise = axios.get(`http://localhost:5000/get-material-info/${searchInput}`);
-    const tableResponsePromise = axios.get(`http://localhost:5000/get-material-table-data/${searchInput}`);
-    
-    // Wait for both API calls to finish
-    const [infoRes, tableRes] = await Promise.all([infoResponsePromise, tableResponsePromise]);
-
-    // Check and update state for the first call response
-    if (infoRes.data && Object.keys(infoRes.data).length > 0) {
-      setMaterialData(infoRes.data);
-    } else {
-      setMaterialData(initialData); // Reset to initial state if no data found
+  // Event handler for the search button
+  const handleSearch = async () => {
+    if (!searchInput) {
+      setMaterialData(initialData);
+      setMaterialTableData([]);
+      setSearchSuccess(false);
+      window.alert('請輸入膠料編號'); // Alert if searchInput is empty
+      return;
     }
 
-    // Check and update state for the second call response
-    if (tableRes.data && Array.isArray(tableRes.data) && tableRes.data.length > 0) {
-      setMaterialTableData(tableRes.data);
-    } else {
-      setMaterialTableData([]); // Reset to empty array if no data found
+    // Perform both API calls concurrently using searchInput
+    try {
+      const infoResponsePromise = axios.get(`http://localhost:5000/get-material-info/${searchInput}`);
+      const tableResponsePromise = axios.get(`http://localhost:5000/get-material-table-data/${searchInput}`);
+      
+      // Wait for both API calls to finish
+      const [infoRes, tableRes] = await Promise.all([infoResponsePromise, tableResponsePromise]);
+
+      // Check and update state for the first call response
+      if (infoRes.data && Object.keys(infoRes.data).length > 0) {
+        setMaterialData(infoRes.data);
+        setSearchSuccess(true);
+        setLastSearchedId(searchInput);
+      } else {
+        setMaterialData(initialData);
+        // setSearchSuccess(false);
+      }
+
+      // Check and update state for the second call response
+      if (tableRes.data && Array.isArray(tableRes.data) && tableRes.data.length > 0) {
+        setMaterialTableData(tableRes.data);
+      } else {
+        setMaterialTableData([]); // Reset to empty array if no data found
+      }
+    } catch (error) {
+      // If either call fails, handle accordingly
+      if (error.response && error.response.status === 404) {
+        window.alert('查無此ID資料');
+      } else {
+        console.error('Error fetching material data:', error);
+      }
+      setMaterialData(initialData); // Reset to initial state on error
+      setMaterialTableData([]); // Reset to empty array on error
+      setSearchSuccess(false);
     }
-  } catch (error) {
-    // If either call fails, handle accordingly
-    if (error.response && error.response.status === 404) {
-      window.alert('查無此ID資料');
-    } else {
-      console.error('Error fetching material data:', error);
-    }
-    setMaterialData(initialData); // Reset to initial state on error
-    setMaterialTableData([]); // Reset to empty array on error
-  }
-};
+  };
 
   // Calculate totals only if there is data
   const totalUsage = materialTableData.length > 0
@@ -235,12 +262,31 @@ const handleSearch = async () => {
 
 
             {/* left table below showing kg -------------------*/}
-            <div className="mt-4 p-5 bg-white rounded-lg shadow-lg ring-1 ring-gray-300 flex flex-col justify-center text-center" style={{height: "100px" }}>
+            <div className="mt-4 p-5 bg-white rounded-lg shadow-lg ring-1 ring-gray-300 flex flex-col justify-center text-center">
               <div className="flex gap-4 text-center justify-center">
                 <span className="text-sm text-gray-600">總用量: <span className="font-semibold">{formattedTotalUsage} kg</span></span>
                 <span className="text-sm text-gray-600">總單價: <span className="font-semibold">{formattedTotalPrice}</span></span>
               </div>
               <span className="text-lg text-gray-900 font-bold mt-1">每公斤單價: <span className="text-xl text-green-600">{`$${(totalPrice / totalUsage).toFixed(2)}`}</span></span>
+              {searchSuccess && (
+                <div className="flex gap-2 justify-center" style={{marginTop:"50px"}}>
+                  <button
+                    type="button"
+                    className="rounded-md bg-yellow-500 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-yellow-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-600"
+                    //onClick={handleEditClick}
+                  >
+                    編輯
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md bg-red-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                    onClick={handleDeleteClick}
+                  >
+                    刪除膠料
+                  </button>
+                </div>
+              )}
+              
             </div>
           </div>
       

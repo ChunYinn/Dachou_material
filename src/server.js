@@ -1152,6 +1152,45 @@ app.get('/raw-material-id-suggestions/:prefix', async (req, res) => {
   }
 });
 
+//for delete rubber formula
+app.delete('/delete-rubber-formula/:materialId', async (req, res) => {
+  try {
+    const { materialId } = req.params;
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = 'DELETE FROM rubber_formula_file WHERE material_id = ?';
+    const [result] = await connection.execute(sql, [materialId]);
+    await connection.end();
+
+    if (result.affectedRows > 0) {
+      res.send({ message: 'Material formulas successfully deleted' });
+    } else {
+      res.status(404).send({ message: 'No formulas found for given material ID' });
+    }
+  } catch (error) {
+    console.error('Error deleting material formulas:', error);
+    res.status(500).send({ message: 'Error deleting material formulas', error: error.message });
+  }
+});
+
+app.delete('/delete-rubber/:materialId', async (req, res) => {
+  try {
+    const { materialId } = req.params;
+    const connection = await mysql.createConnection(dbConfig);
+    const sql = 'DELETE FROM rubber_file WHERE material_id = ?';
+    const [result] = await connection.execute(sql, [materialId]);
+    await connection.end();
+
+    if (result.affectedRows > 0) {
+      res.send({ message: 'Material successfully deleted' });
+    } else {
+      res.status(404).send({ message: 'Material not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting material:', error);
+    res.status(500).send({ message: 'Error deleting material', error: error.message });
+  }
+});
+
 
 //-----------------inventory search-----------------------------------------------
 app.get('/search-materials-by-id', async (req, res) => {
