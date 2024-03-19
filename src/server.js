@@ -362,16 +362,17 @@ app.get('/get-daily-material-status-employee', async (req, res) => {
     // Create a new MySQL connection
     const connection = await mysql.createConnection(dbConfig);
 
-    // Get today's date and calculate the date for the next three days
+    // Get today's date and calculate the dates for yesterday and the next three days
     const now = new Date();
     const today = new Date(now.getTime() + 8 * 60 * 60 * 1000); // Adjusted for time zone
-    const todayStr = today.toISOString().split('T')[0];
+    today.setDate(today.getDate() - 1); // Move to yesterday
+    const yesterdayStr = today.toISOString().split('T')[0]; // Yesterday's date as string
 
     const threeDaysLater = new Date(today);
-    threeDaysLater.setDate(today.getDate() + 3); // Three days after today
+    threeDaysLater.setDate(today.getDate() + 4); // Three days after yesterday (which includes today)
     const threeDaysLaterStr = threeDaysLater.toISOString().split('T')[0];
 
-    // SQL query to select data from the daily_status table for the next four days
+    // SQL query to select data from the daily_status table from yesterday through the next three days
     const sql = `
       SELECT 
         daily_status_id, 
@@ -385,7 +386,7 @@ app.get('/get-daily-material-status-employee', async (req, res) => {
     `;
 
     // Execute the query with the date range
-    const [rows] = await connection.execute(sql, [todayStr, threeDaysLaterStr]);
+    const [rows] = await connection.execute(sql, [yesterdayStr, threeDaysLaterStr]);
 
     // Close the connection
     await connection.end();
@@ -397,7 +398,6 @@ app.get('/get-daily-material-status-employee', async (req, res) => {
     res.status(500).send('Error fetching data: ' + error.message);
   }
 });
-
 
 // Update audit status (by toggle button)
 app.put('/updateAuditStatus/:date', async (req, res) => {

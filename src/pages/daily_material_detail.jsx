@@ -412,7 +412,7 @@ export default function DailyMaterialDetail() {
         collecting_finished: newStatus ? 1 : 0, // Assuming the backend expects 1 or 0 for true/false
       });
       console.log('Update response:', response.data);
-  
+      
       // Update local state to reflect the change
       setGroupedData((prevData) => {
         // Create a deep copy of the state
@@ -435,14 +435,18 @@ export default function DailyMaterialDetail() {
     }
   };
   
-  const handleCheckboxChange = async (id, currentStatus) => {
+  const handleCheckboxChange = async (id, currentStatus, chemical_raw_material_id) => {
     try {
       // Call the API endpoint to get the sum of output_kg
       const response = await axios.get(`http://localhost:5000/sum-output-kg/${id}`);
       const totalOutputKg = response.data.totalOutputKg;
+
+      // Check the second letter of the chemical raw material id
+      const secondLetter = chemical_raw_material_id.charAt(1).toUpperCase();
+      const isValidSecondLetter = secondLetter >= 'A' && secondLetter <= 'I';
   
       // Check if totalOutputKg is greater than 0
-      if (totalOutputKg > 0) {
+      if ((totalOutputKg > 0 && isValidSecondLetter) || !isValidSecondLetter) {
         const newStatus = !currentStatus; // Toggle the status
         updateCollectingStatus(id, newStatus);
       } else {
@@ -805,7 +809,7 @@ export default function DailyMaterialDetail() {
                                 onChange={() => {
                                   // Only call handleCheckboxChange if collecting_status is currently false
                                   if (!material.collecting_status) {
-                                    handleCheckboxChange(material.daily_material_formula_id, material.collecting_status);
+                                    handleCheckboxChange(material.daily_material_formula_id, material.collecting_status, material.chemical_raw_material_id);
                                   }
                                 }}
                                 className="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 hover:border-indigo-500"

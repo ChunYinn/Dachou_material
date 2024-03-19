@@ -69,8 +69,10 @@ export default function MaterialByDate() {
   
   // Get today's date in YYYY-MM-DD format TW GMT+8
   const now = new Date();
-  const today = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  const today = new Date(now.getTime() + 8 * 60 * 60 * 1000); 
+  const yesterday = new Date(now.getTime() - 16 * 60 * 60 * 1000); 
   const todayStr = today.toISOString().split('T')[0];
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
 
   return (
     <div className="flex justify-center items-center">
@@ -120,7 +122,9 @@ export default function MaterialByDate() {
                       <tr key={data.daily_status_id} className="even:bg-gray-50">
 
                         <td className="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-gray-500" style={{ width: '20%' }}>
-                          {data.selected_date === todayStr ? todayStr+' (今日)' : data.selected_date}
+                          <span className={data.selected_date === todayStr ? 'text-red-500' : ''}>
+                            {data.selected_date} {data.selected_date === todayStr ? '(今日)' : data.selected_date === yesterdayStr ? '(昨日)' : ''}
+                          </span>
                         </td>
                         {userRole === 'manager' ? (
                           <td className="whitespace-nowrap px-3 py-4 text-sm">
