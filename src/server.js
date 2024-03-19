@@ -382,7 +382,7 @@ app.get('/get-daily-material-status-employee', async (req, res) => {
         auditStatus
       FROM daily_status 
       WHERE selected_date BETWEEN ? AND ?
-      ORDER BY selected_date
+      ORDER BY selected_date DESC
     `;
 
     // Execute the query with the date range
